@@ -24,6 +24,10 @@
 - **Build:** `npm run build` or `yarn build`
 - Open browser: `http://localhost:3039`
 
+## Docs
+
+- Frontend integration guide: [docs/frontend-integration.md](docs/frontend-integration.md)
+
 ## Upgrade to PRO Version
 
 | Minimal Free                | [Minimal Pro](https://material-ui.com/store/items/minimal-dashboard/)                                   |

@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useState } from "react";
 
 import CloseIcon from "@mui/icons-material/Close";
 import {
@@ -19,24 +19,29 @@ import {
     DialogContent,
 } from "@mui/material";
 
+import { type ArticleItem, type ArticlePayload } from "src/api/articles";
+
 type Props = {
     open: boolean;
     onClose: () => void;
+    onSave: (data: ArticlePayload) => void;
+    initialData?: ArticleItem;
 };
 
-export default function NewArticleModal({ open, onClose }: Props) {
+export default function NewArticleModal({ open, onClose, onSave, initialData }: Props) {
     const [title, setTitle] = useState("");
-    const [category, setCategory] = useState("");
-    const [tags, setTags] = useState<string[]>([]);
+    const [subtitle, setSubtitle] = useState("");
+    const [coverImage, setCoverImage] = useState("");
+    const [bodyMd, setBodyMd] = useState("");
+    const [readTime, setReadTime] = useState("");
+    const [publishDate, setPublishDate] = useState("");
+    const [status, setStatus] = useState<'published' | 'draft'>('draft');
     const [tagInput, setTagInput] = useState("");
-    const [content, setContent] = useState("");
-    const [image, setImage] = useState<string | null>(null);
-
-    const fileRef = useRef<HTMLInputElement | null>(null);
+    const [tags, setTags] = useState<string[]>([]);
 
     const handleAddTag = () => {
-        if (!tagInput) return;
-        setTags([...tags, tagInput]);
+        if (!tagInput.trim()) return;
+        setTags([...tags, tagInput.trim()]);
         setTagInput("");
     };
 
@@ -44,55 +49,61 @@ export default function NewArticleModal({ open, onClose }: Props) {
         setTags(tags.filter((t) => t !== tag));
     };
 
-    const handleImage = (file?: File) => {
-        if (!file || !file.type.startsWith("image/")) return;
-        setImage(URL.createObjectURL(file));
+    const reset = () => {
+        setTitle("");
+        setSubtitle("");
+        setCoverImage("");
+        setBodyMd("");
+        setReadTime("");
+        setPublishDate("");
+        setStatus('draft');
+        setTags([]);
+        setTagInput("");
     };
 
-    const handlePublish = () => {
-        const data = { title, category, tags, content };
-        console.log("Publish:", data);
+    React.useEffect(() => {
+        if (initialData && open) {
+            setTitle(initialData.title || "");
+            setSubtitle(initialData.subtitle || "");
+            setCoverImage(initialData.coverImage || "");
+            setBodyMd(initialData.bodyMd || "");
+            setReadTime(initialData.readTime || "");
+            setPublishDate(initialData.publishDate || "");
+            setStatus(initialData.status || 'draft');
+            setTags(initialData.tags || []);
+        } else if (open) {
+            reset();
+        }
+    }, [initialData, open]);
 
-        // reset form
-        setTitle("");
-        setCategory("");
-        setTags([]);
-        setContent("");
-        setImage(null);
-
-        onClose(); // close popup
-    };
-
-    const handleSaveDraft = () => {
-        const data = { title, category, tags, content };
-        console.log("Publish:", data);
-
-        // reset form
-        setTitle("");
-        setCategory("");
-        setTags([]);
-        setContent("");
-        setImage(null);
-
-        onClose(); // close popup
+    const handleSubmit = () => {
+        if (!title.trim()) return;
+        onSave({
+            title,
+            subtitle: subtitle || undefined,
+            coverImage: coverImage || undefined,
+            bodyMd: bodyMd || undefined,
+            readTime: readTime || undefined,
+            publishDate: publishDate || undefined,
+            status,
+            tags,
+        });
+        reset();
+        onClose();
     };
 
     return (
         <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
-            {/* Header */}
             <DialogTitle sx={{ display: "flex", justifyContent: "space-between" }}>
-                Create New Article 📝
+                {initialData ? "Edit Article" : "Create New Article"} 📝
                 <IconButton onClick={onClose}>
                     <CloseIcon />
                 </IconButton>
             </DialogTitle>
 
-            {/* Content */}
             <DialogContent dividers>
                 <Card sx={{ borderRadius: 3, boxShadow: 0 }}>
                     <CardContent>
-
-                        {/* TITLE */}
                         <TextField
                             fullWidth
                             label="Article Title"
@@ -101,119 +112,97 @@ export default function NewArticleModal({ open, onClose }: Props) {
                             sx={{ mb: 3 }}
                         />
 
-                        {/* SUB - TITLE */}
                         <TextField
                             fullWidth
-                            label="Sub Article Title"
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
+                            label="Subtitle"
+                            value={subtitle}
+                            onChange={(e) => setSubtitle(e.target.value)}
                             sx={{ mb: 3 }}
                         />
 
-                        {/* CATEGORY */}
+                        <TextField
+                            fullWidth
+                            label="Cover Image URL"
+                            value={coverImage}
+                            onChange={(e) => setCoverImage(e.target.value)}
+                            sx={{ mb: 3 }}
+                        />
+
+                        <TextField
+                            fullWidth
+                            label="Publish Date (ISO)"
+                            placeholder="2026-03-26T10:00:00.000Z"
+                            value={publishDate}
+                            onChange={(e) => setPublishDate(e.target.value)}
+                            sx={{ mb: 3 }}
+                        />
+
+                        <TextField
+                            fullWidth
+                            label="Read Time"
+                            placeholder="5 min read"
+                            value={readTime}
+                            onChange={(e) => setReadTime(e.target.value)}
+                            sx={{ mb: 3 }}
+                        />
+
                         <FormControl fullWidth sx={{ mb: 3 }}>
-                            <InputLabel>Category</InputLabel>
+                            <InputLabel>Status</InputLabel>
                             <Select
-                                value={category}
-                                label="Category"
-                                onChange={(e) => setCategory(e.target.value)}
+                                value={status}
+                                label="Status"
+                                onChange={(e) => setStatus(e.target.value as 'published' | 'draft')}
                             >
-                                <MenuItem value="Technology">Technology</MenuItem>
-                                <MenuItem value="Business">Business</MenuItem>
-                                <MenuItem value="Lifestyle">Lifestyle</MenuItem>
+                                <MenuItem value="published">Published</MenuItem>
+                                <MenuItem value="draft">Draft</MenuItem>
                             </Select>
                         </FormControl>
 
-                        {/* TAGS */}
-                        {/* <Box mb={3}>
-              <Typography mb={1}>Tags</Typography>
-
-              <Box display="flex" gap={1}>
-                <TextField
-                  fullWidth
-                  placeholder="Add tag..."
-                  value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
-                />
-                <Button variant="contained" onClick={handleAddTag}>
-                  Add
-                </Button>
-              </Box>
-
-              <Box mt={2} display="flex" gap={1} flexWrap="wrap">
-                {tags.map((tag) => (
-                  <Chip
-                    key={tag}
-                    label={tag}
-                    onDelete={() => handleDeleteTag(tag)}
-                  />
-                ))}
-              </Box>
-            </Box> */}
-
-                        {/* IMAGE */}
-                        <Box mb={3}>
-                            <Typography mb={1}>Cover Image</Typography>
-
-                            <Box
-                                onClick={() => fileRef.current?.click()}
-                                sx={{
-                                    border: "2px dashed #6366f1",
-                                    borderRadius: 2,
-                                    p: 3,
-                                    textAlign: "center",
-                                    cursor: "pointer",
-                                }}
-                            >
-                                {!image ? (
-                                    "Click to upload image"
-                                ) : (
-                                    <img
-                                        src={image}
-                                        alt="cover"
-                                        style={{ width: "100%", borderRadius: 8 }}
-                                    />
-                                )}
-                            </Box>
-
-                            <input
-                                ref={fileRef}
-                                type="file"
-                                hidden
-                                accept="image/*"
-                                onChange={(e) => handleImage(e.target.files?.[0])}
-                            />
-                        </Box>
-
-                        {/* CONTENT */}
                         <TextField
                             fullWidth
-                            label="Content"
+                            label="Content (Markdown)"
                             multiline
                             rows={6}
-                            value={content}
-                            onChange={(e) => setContent(e.target.value)}
+                            value={bodyMd}
+                            onChange={(e) => setBodyMd(e.target.value)}
                             sx={{ mb: 3 }}
                         />
 
-                        {/* ACTIONS */}
+                        <Box mb={3}>
+                            <Typography mb={1}>Tags</Typography>
+
+                            <Box display="flex" gap={1}>
+                                <TextField
+                                    fullWidth
+                                    placeholder="Add tag..."
+                                    value={tagInput}
+                                    onChange={(e) => setTagInput(e.target.value)}
+                                />
+                                <Button variant="contained" onClick={handleAddTag}>
+                                    Add
+                                </Button>
+                            </Box>
+
+                            <Box mt={2} display="flex" gap={1} flexWrap="wrap">
+                                {tags.map((tag) => (
+                                    <Chip
+                                        key={tag}
+                                        label={tag}
+                                        onDelete={() => handleDeleteTag(tag)}
+                                    />
+                                ))}
+                            </Box>
+                        </Box>
+
                         <Box display="flex" gap={2}>
                             <Button
                                 variant="contained"
                                 color="primary"
                                 fullWidth
-                                onClick={handlePublish}
+                                onClick={handleSubmit}
+                                disabled={!title.trim()}
                             >
-                                Publish
-                            </Button>
-
-                            <Button
-                                variant="outlined"
-                                color="warning"
-                                fullWidth
-                                onClick={handleSaveDraft}
-                            >
-                                Save Draft
+                                {initialData ? "Update" : "Save"}
                             </Button>
 
                             <Button

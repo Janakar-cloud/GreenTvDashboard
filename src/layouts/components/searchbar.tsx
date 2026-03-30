@@ -4,14 +4,21 @@ import { useState, useCallback } from 'react';
 import { varAlpha } from 'minimal-shared/utils';
 
 import Box from '@mui/material/Box';
-import Slide from '@mui/material/Slide';
-import Input from '@mui/material/Input';
 import Button from '@mui/material/Button';
-import { useTheme } from '@mui/material/styles';
-import IconButton from '@mui/material/IconButton';
-import InputAdornment from '@mui/material/InputAdornment';
 import ClickAwayListener from '@mui/material/ClickAwayListener';
+import CircularProgress from '@mui/material/CircularProgress';
+import Divider from '@mui/material/Divider';
+import IconButton from '@mui/material/IconButton';
+import Input from '@mui/material/Input';
+import InputAdornment from '@mui/material/InputAdornment';
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import ListItemText from '@mui/material/ListItemText';
+import Slide from '@mui/material/Slide';
+import Typography from '@mui/material/Typography';
+import { useTheme } from '@mui/material/styles';
 
+import { globalSearch } from 'src/api/search';
 import { Iconify } from 'src/components/iconify';
 
 // ----------------------------------------------------------------------
@@ -20,6 +27,10 @@ export function Searchbar({ sx, ...other }: BoxProps) {
   const theme = useTheme();
 
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [results, setResults] = useState<{ label: string; items: string[] }[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   const handleOpen = useCallback(() => {
     setOpen((prev) => !prev);
@@ -27,7 +38,33 @@ export function Searchbar({ sx, ...other }: BoxProps) {
 
   const handleClose = useCallback(() => {
     setOpen(false);
+    setQuery('');
+    setResults([]);
+    setError(null);
   }, []);
+
+  const handleSearch = useCallback(async () => {
+    if (!query.trim()) {
+      setResults([]);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await globalSearch({ q: query.trim(), type: 'all', limit: 5 });
+      const next: { label: string; items: string[] }[] = [];
+      if (data.media && Array.isArray(data.media)) next.push({ label: 'Media', items: data.media.map((i: any) => i.title || i.name || 'Media item') });
+      if (data.articles && Array.isArray(data.articles)) next.push({ label: 'Articles', items: data.articles.map((i: any) => i.title || 'Article') });
+      if (data.posts && Array.isArray(data.posts)) next.push({ label: 'Posts', items: data.posts.map((i: any) => i.title || 'Post') });
+      if (data.caseStories && Array.isArray(data.caseStories)) next.push({ label: 'Case Stories', items: data.caseStories.map((i: any) => i.title || 'Case Story') });
+      setResults(next);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Search failed';
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  }, [query]);
 
   return (
     <ClickAwayListener onClickAway={handleClose}>
@@ -66,6 +103,8 @@ export function Searchbar({ sx, ...other }: BoxProps) {
               fullWidth
               disableUnderline
               placeholder="Search…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
               startAdornment={
                 <InputAdornment position="start">
                   <Iconify width={20} icon="eva:search-fill" sx={{ color: 'text.disabled' }} />
@@ -73,10 +112,57 @@ export function Searchbar({ sx, ...other }: BoxProps) {
               }
               sx={{ fontWeight: 'fontWeightBold' }}
             />
-            <Button variant="contained" onClick={handleClose}>
-              Search
+            <Button variant="contained" onClick={handleSearch} disabled={loading}>
+              {loading ? <CircularProgress size={20} color="inherit" /> : 'Search'}
             </Button>
           </Box>
+          {open && (results.length > 0 || loading || error) && (
+            <Box
+              sx={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                right: 0,
+                zIndex: 100,
+                backgroundColor: 'background.paper',
+                boxShadow: theme.vars.customShadows.z8,
+                maxHeight: 320,
+                overflowY: 'auto',
+              }}
+            >
+              {error && (
+                <Box p={2}>
+                  <Typography color="error" variant="body2">{error}</Typography>
+                </Box>
+              )}
+              {loading && (
+                <Box p={2} display="flex" alignItems="center" gap={1}>
+                  <CircularProgress size={18} />
+                  <Typography variant="body2">Searching…</Typography>
+                </Box>
+              )}
+              {!loading && !error && results.map((group, idx) => (
+                <Box key={group.label}>
+                  <Box px={2} pt={1} pb={0.5}>
+                    <Typography variant="overline" color="text.secondary">{group.label}</Typography>
+                  </Box>
+                  <List dense disablePadding>
+                    {group.items.slice(0, 5).map((item, i) => (
+                      <ListItem key={`${group.label}-${i}`}>
+                        <ListItemText primary={item} />
+                      </ListItem>
+                    ))}
+                  </List>
+                  {idx < results.length - 1 && <Divider />}
+                </Box>
+              ))}
+              {!loading && !error && results.length === 0 && query.trim() && (
+                <Box p={2}>
+                  <Typography variant="body2">No results found.</Typography>
+                </Box>
+              )}
+            </Box>
+          )}
         </Slide>
       </div>
     </ClickAwayListener>

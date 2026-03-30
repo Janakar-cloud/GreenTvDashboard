@@ -11,6 +11,8 @@ import InputAdornment from '@mui/material/InputAdornment';
 
 import { useRouter } from 'src/routes/hooks';
 
+import { login } from 'src/api/auth';
+
 import { Iconify } from 'src/components/iconify';
 
 // ----------------------------------------------------------------------
@@ -18,25 +20,48 @@ import { Iconify } from 'src/components/iconify';
 export function SignInView() {
   const router = useRouter();
 
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSignIn = useCallback(() => {
-    router.push('/');
-  }, [router]);
+  const handleSignIn = useCallback(
+    async (event: React.FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      setError(null);
+      setLoading(true);
+
+      try {
+        await login(email, password);
+        router.push('/dashboard');
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Unable to sign in';
+        setError(message);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [email, password, router]
+  );
 
   const renderForm = (
     <Box
+      component="form"
+      onSubmit={handleSignIn}
       sx={{
         display: 'flex',
         alignItems: 'flex-end',
         flexDirection: 'column',
+        width: '100%',
       }}
     >
       <TextField
         fullWidth
         name="email"
         label="Email address"
-        defaultValue="hello@gmail.com"
+        value={email}
+        onChange={(event) => setEmail(event.target.value)}
         sx={{ mb: 3 }}
         slotProps={{
           inputLabel: { shrink: true },
@@ -51,7 +76,8 @@ export function SignInView() {
         fullWidth
         name="password"
         label="Password"
-        defaultValue="@demo1234"
+        value={password}
+        onChange={(event) => setPassword(event.target.value)}
         type={showPassword ? 'text' : 'password'}
         slotProps={{
           inputLabel: { shrink: true },
@@ -68,15 +94,21 @@ export function SignInView() {
         sx={{ mb: 3 }}
       />
 
+      {error && (
+        <Typography variant="body2" color="error" sx={{ mb: 2, width: '100%', textAlign: 'left' }}>
+          {error}
+        </Typography>
+      )}
+
       <Button
         fullWidth
         size="large"
         type="submit"
         color="inherit"
         variant="contained"
-        onClick={handleSignIn}
+        disabled={loading}
       >
-        Sign in
+        {loading ? 'Signing in...' : 'Sign in'}
       </Button>
     </Box>
   );

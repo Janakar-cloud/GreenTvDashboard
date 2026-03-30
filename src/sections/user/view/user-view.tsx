@@ -1,16 +1,20 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 
+import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
-import Card from '@mui/material/Card';
-import Table from '@mui/material/Table';
 import Button from '@mui/material/Button';
+import Card from '@mui/material/Card';
+import CircularProgress from '@mui/material/CircularProgress';
+import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
-import Typography from '@mui/material/Typography';
+import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TablePagination from '@mui/material/TablePagination';
+import TableRow from '@mui/material/TableRow';
+import Typography from '@mui/material/Typography';
 
-import { _users } from 'src/_mock';
 import { DashboardContent } from 'src/layouts/dashboard';
+import { createUser, deleteUser, getUsers, patchUserStatus, updateUser } from 'src/api/users';
 
 import { Iconify } from 'src/components/iconify';
 import { Scrollbar } from 'src/components/scrollbar';
@@ -20,8 +24,8 @@ import { TableNoData } from '../table-no-data';
 import { UserTableRow } from '../user-table-row';
 import { UserTableHead } from '../user-table-head';
 import { TableEmptyRows } from '../table-empty-rows';
+import { emptyRows } from '../utils';
 import { UserTableToolbar } from '../user-table-toolbar';
-import { emptyRows, applyFilter, getComparator } from '../utils';
 
 import type { UserProps } from '../user-table-row';
 
@@ -31,17 +35,53 @@ export function UserView() {
   const table = useTable();
 
   const [filterName, setFilterName] = useState('');
-  const [newUserData, setNewUserData] = useState(false);
+  const [userDialog, setUserDialog] = useState<{ open: boolean; user?: UserProps | null }>({ open: false, user: null });
+  const [users, setUsers] = useState<UserProps[]>([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [mutationError, setMutationError] = useState<string | null>(null);
 
-  const dataFiltered: UserProps[] = applyFilter({
-    inputData: _users,
-    comparator: getComparator(table.order, table.orderBy),
-    filterName,
-  });
+  const loadUsers = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await getUsers({
+        page: table.page + 1,
+        limit: table.rowsPerPage,
+        search: filterName || undefined,
+        sort: table.orderBy,
+        order: table.order,
+      });
 
-  const notFound = !dataFiltered.length && !!filterName;
+      const payload = Array.isArray(response) ? response : response.data;
+      const meta = Array.isArray(response) ? undefined : response.meta;
 
+      setUsers(
+        payload.map((item) => ({
+          id: item.id,
+          name: item.name,
+          role: item.role,
+          status: item.status,
+          avatarUrl: item.avatarUrl ?? '',
+          isVerified: Boolean(item.isVerified),
+        }))
+      );
+      setTotal(meta?.total ?? payload.length);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unable to load users';
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  }, [filterName, table.order, table.orderBy, table.page, table.rowsPerPage]);
 
+  useEffect(() => {
+    loadUsers();
+  }, [loadUsers]);
+
+  const notFound = !users.length && !!filterName;
 
   return (
     <DashboardContent>
@@ -58,12 +98,24 @@ export function UserView() {
         <Button
           variant="contained"
           color="inherit"
-          onClick={() => { setNewUserData(true) }}
+          onClick={() => setUserDialog({ open: true, user: null })}
           startIcon={<Iconify icon="mingcute:add-line" />}
         >
           New user
         </Button>
       </Box>
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+
+      {mutationError && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {mutationError}
+        </Alert>
+      )}
 
       <Card>
         <UserTableToolbar
@@ -81,13 +133,13 @@ export function UserView() {
               <UserTableHead
                 order={table.order}
                 orderBy={table.orderBy}
-                rowCount={_users.length}
+                rowCount={total}
                 numSelected={table.selected.length}
                 onSort={table.onSort}
                 onSelectAllRows={(checked) =>
                   table.onSelectAllRows(
                     checked,
-                    _users.map((user) => user.id)
+                    users.map((user) => user.id)
                   )
                 }
                 headLabel={[
@@ -100,23 +152,51 @@ export function UserView() {
                 ]}
               />
               <TableBody>
-                {dataFiltered
-                  .slice(
-                    table.page * table.rowsPerPage,
-                    table.page * table.rowsPerPage + table.rowsPerPage
-                  )
-                  .map((row) => (
+                {loading ? (
+                  <TableRowLoading rows={table.rowsPerPage} />
+                ) : (
+                  users.map((row) => (
                     <UserTableRow
                       key={row.id}
                       row={row}
                       selected={table.selected.includes(row.id)}
                       onSelectRow={() => table.onSelectRow(row.id)}
+                      onEdit={() => setUserDialog({ open: true, user: row })}
+                      onDelete={async () => {
+                        if (!window.confirm('Delete this user?')) return;
+                        setSubmitting(true);
+                        setMutationError(null);
+                        try {
+                          await deleteUser(row.id);
+                          loadUsers();
+                        } catch (err) {
+                          const message = err instanceof Error ? err.message : 'Unable to delete user';
+                          setMutationError(message);
+                        } finally {
+                          setSubmitting(false);
+                        }
+                      }}
+                      onToggleStatus={async () => {
+                        setSubmitting(true);
+                        setMutationError(null);
+                        try {
+                          const next = row.status === 'active' ? 'inactive' : 'active';
+                          await patchUserStatus(row.id, next);
+                          loadUsers();
+                        } catch (err) {
+                          const message = err instanceof Error ? err.message : 'Unable to update status';
+                          setMutationError(message);
+                        } finally {
+                          setSubmitting(false);
+                        }
+                      }}
                     />
-                  ))}
+                  ))
+                )}
 
                 <TableEmptyRows
                   height={68}
-                  emptyRows={emptyRows(table.page, table.rowsPerPage, _users.length)}
+                  emptyRows={emptyRows(table.page, table.rowsPerPage, total)}
                 />
 
                 {notFound && <TableNoData searchQuery={filterName} />}
@@ -128,19 +208,64 @@ export function UserView() {
         <TablePagination
           component="div"
           page={table.page}
-          count={_users.length}
+          count={total}
           rowsPerPage={table.rowsPerPage}
           onPageChange={table.onChangePage}
           rowsPerPageOptions={[5, 10, 25]}
           onRowsPerPageChange={table.onChangeRowsPerPage}
         />
       </Card>
-      {newUserData ? <UserPopup
-        open={newUserData}
-        onClose={() => setNewUserData(false)}
-        onSave={() => { }}
-      /> : <div />}
+      {userDialog.open ? (
+        <UserPopup
+          open={userDialog.open}
+          initialData={userDialog.user || undefined}
+          onClose={() => setUserDialog({ open: false, user: null })}
+          onSave={async (data) => {
+            setSubmitting(true);
+            setMutationError(null);
+            try {
+              if (userDialog.user) {
+                await updateUser(userDialog.user.id, {
+                  name: data.name,
+                  role: data.role,
+                  status: data.status,
+                });
+              } else {
+                await createUser({
+                  email: data.email,
+                  password: data.password,
+                  role: data.role,
+                  name: data.name,
+                  status: data.status,
+                });
+              }
+              loadUsers();
+            } catch (err) {
+              const message = err instanceof Error ? err.message : 'Unable to save user';
+              setMutationError(message);
+            } finally {
+              setSubmitting(false);
+            }
+          }}
+        />
+      ) : null}
     </DashboardContent>
+  );
+}
+
+// ----------------------------------------------------------------------
+
+function TableRowLoading({ rows }: { rows: number }) {
+  return (
+    <>
+      {Array.from({ length: Math.max(1, rows) }).map((_, index) => (
+        <TableRow key={index}>
+          <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
+            <CircularProgress size={24} />
+          </TableCell>
+        </TableRow>
+      ))}
+    </>
   );
 }
 

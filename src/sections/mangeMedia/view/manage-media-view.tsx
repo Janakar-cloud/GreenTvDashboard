@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -8,6 +8,7 @@ import {
   Grid,
   Chip,
   Button,
+  Alert,
   Select,
   MenuItem,
   TextField,
@@ -17,35 +18,88 @@ import {
   InputLabel,
   CardContent,
   FormControl,
+  CircularProgress,
 } from "@mui/material";
 
-// 🎯 Dummy Data
-const videos = [
-  {
-    id: 1,
-    type: "video",
-    title: "AI Future Trends",
-    category: "Technology",
-    menu: "Podcast",
-    thumbnail: "https://picsum.photos/300/180",
-    duration: "10:30",
-  },
-  {
-    id: 2,
-    type: "audio",
-    title: "Startup Podcast Episode",
-    category: "Business",
-    menu: "Podcast",
-    audioUrl: "https://www.w3schools.com/html/horse.mp3",
-    duration: "15:20",
-  },
-];
+import { getCategories } from "src/api/reference";
+import { deleteMedia, getMedia, type MediaItem } from "src/api/media";
+
+function extractList(response: MediaItem[] | { data?: MediaItem[] }) {
+  if (Array.isArray(response)) return response;
+  if (response && "data" in response && Array.isArray(response.data)) return response.data;
+  return [] as MediaItem[];
+}
+
+function formatDuration(seconds?: number) {
+  if (!seconds && seconds !== 0) return "--";
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
+}
 
 export default function ManageVideos() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
+  const [menu, setMenu] = useState("");
+  const [status, setStatus] = useState("");
 
-  const filteredVideos = videos.filter((video) =>
+  const [categories, setCategories] = useState<string[]>([]);
+  const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const response = await getCategories("media");
+        const list = Array.isArray(response) ? response : response?.data || [];
+        setCategories(list);
+      } catch (err) {
+        console.warn("Failed to load categories", err);
+      }
+    })();
+  }, []);
+
+  const fetchMedia = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await getMedia({
+        search: search || undefined,
+        category: category || undefined,
+        menu: (menu as MediaItem["menu"]) || undefined,
+        status: (status as MediaItem["status"]) || undefined,
+      });
+
+      setMediaItems(extractList(response));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to load media";
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  }, [category, menu, search, status]);
+
+  useEffect(() => {
+    fetchMedia();
+  }, [fetchMedia]);
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm("Delete this media item?")) return;
+    setDeletingId(id);
+    try {
+      await deleteMedia(id);
+      setMediaItems((prev) => prev.filter((item) => item.id !== id));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to delete";
+      setError(message);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const filteredVideos = mediaItems.filter((video) =>
     video.title.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -56,7 +110,7 @@ export default function ManageVideos() {
       </Typography>
 
       {/* 🔍 Search + Filter */}
-      <Box display="flex" gap={2} mb={3}>
+      <Box display="flex" gap={2} mb={3} flexWrap="wrap">
         <TextField
           fullWidth
           placeholder="Search..."
@@ -72,11 +126,50 @@ export default function ManageVideos() {
             onChange={(e) => setCategory(e.target.value)}
           >
             <MenuItem value="">All</MenuItem>
-            <MenuItem value="Technology">Technology</MenuItem>
-            <MenuItem value="Business">Business</MenuItem>
+            {categories.map((cat) => (
+              <MenuItem key={cat} value={cat}>
+                {cat}
+              </MenuItem>
+            ))}
           </Select>
         </FormControl>
+
+        <FormControl sx={{ minWidth: 160 }}>
+          <InputLabel>Menu</InputLabel>
+          <Select value={menu} label="Menu" onChange={(e) => setMenu(e.target.value)}>
+            <MenuItem value="">All</MenuItem>
+            <MenuItem value="LiveTv">LiveTv</MenuItem>
+            <MenuItem value="Podcast">Podcast</MenuItem>
+          </Select>
+        </FormControl>
+
+        <FormControl sx={{ minWidth: 160 }}>
+          <InputLabel>Status</InputLabel>
+          <Select value={status} label="Status" onChange={(e) => setStatus(e.target.value)}>
+            <MenuItem value="">All</MenuItem>
+            <MenuItem value="processing">Processing</MenuItem>
+            <MenuItem value="ready">Ready</MenuItem>
+            <MenuItem value="failed">Failed</MenuItem>
+          </Select>
+        </FormControl>
+
+        <Button variant="outlined" onClick={fetchMedia} disabled={loading}>
+          Refresh
+        </Button>
       </Box>
+
+      {loading && (
+        <Box display="flex" alignItems="center" gap={1} mb={2}>
+          <CircularProgress size={20} />
+          <Typography variant="body2">Loading media...</Typography>
+        </Box>
+      )}
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
 
       {/* 📦 Grid */}
       <Grid container spacing={3}>
@@ -85,12 +178,8 @@ export default function ManageVideos() {
             <Card sx={{ borderRadius: 3, boxShadow: 4 }}>
               
               {/* 🎬 VIDEO */}
-              {video.type === "video" ? (
-                <CardMedia
-                  component="img"
-                  height="180"
-                  image={video.thumbnail}
-                />
+              {video.mediaType === "video" ? (
+                <CardMedia component="img" height="180" image={video.thumbnailUrl || video.fileUrl} />
               ) : (
                 /* 🎵 AUDIO */
                 <Box
@@ -103,7 +192,7 @@ export default function ManageVideos() {
                   }}
                 >
                   <audio controls style={{ width: "90%" }}>
-                    <source src={video.audioUrl} />
+                    <source src={video.fileUrl} />
                   </audio>
                 </Box>
               )}
@@ -115,17 +204,18 @@ export default function ManageVideos() {
 
                 {/* 🏷 Chips */}
                 <Box mt={1} display="flex" gap={1} flexWrap="wrap">
-                  <Chip label={video.category} size="small" />
+                  {video.category && <Chip label={video.category} size="small" />}
                   <Chip label={video.menu} size="small" />
                   <Chip
-                    label={video.type === "video" ? "Video 🎬" : "Audio 🎵"}
+                    label={video.mediaType === "video" ? "Video 🎬" : "Audio 🎵"}
                     size="small"
-                    color={video.type === "video" ? "primary" : "secondary"}
+                    color={video.mediaType === "video" ? "primary" : "secondary"}
                   />
+                  <Chip label={video.status} size="small" color="info" />
                 </Box>
 
                 <Typography variant="caption" display="block" mt={1}>
-                  Duration: {video.duration}
+                  Duration: {formatDuration(video.duration)}
                 </Typography>
 
                 {/* Actions */}
@@ -138,8 +228,8 @@ export default function ManageVideos() {
                     Edit
                   </Button>
 
-                  <IconButton color="error">
-                    <DeleteIcon />
+                  <IconButton color="error" onClick={() => handleDelete(video.id)}>
+                    {deletingId === video.id ? <CircularProgress size={16} /> : <DeleteIcon />}
                   </IconButton>
                 </Box>
               </CardContent>

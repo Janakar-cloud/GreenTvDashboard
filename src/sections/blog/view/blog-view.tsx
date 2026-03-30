@@ -20,9 +20,12 @@ import type { IPostItem } from '../post-item';
 
 type Props = {
   posts: IPostItem[];
+  onCreate?: () => void;
+  onEdit?: (post: IPostItem) => void;
+  onDelete?: (post: IPostItem) => void;
 };
 
-export function BlogView({ posts }: Props) {
+export function BlogView({ posts, onCreate, onEdit, onDelete }: Props) {
   const [sortBy, setSortBy] = useState('latest');
 
   const handleSort = useCallback((newSort: string) => {
@@ -45,6 +48,7 @@ export function BlogView({ posts }: Props) {
           variant="contained"
           color="inherit"
           startIcon={<Iconify icon="mingcute:add-line" />}
+          onClick={onCreate}
         >
           New post
         </Button>
@@ -85,6 +89,20 @@ export function BlogView({ posts }: Props) {
               }}
             >
               <PostItem post={post} latestPost={latestPost} latestPostLarge={latestPostLarge} />
+              {(onEdit || onDelete) && (
+                <Box sx={{ mt: 1, display: 'flex', gap: 1 }}>
+                  {onEdit && (
+                    <Button size="small" variant="outlined" onClick={() => onEdit(post)}>
+                      Edit
+                    </Button>
+                  )}
+                  {onDelete && (
+                    <Button size="small" color="error" variant="outlined" onClick={() => onDelete(post)}>
+                      Delete
+                    </Button>
+                  )}
+                </Box>
+              )}
             </Grid>
           );
         })}

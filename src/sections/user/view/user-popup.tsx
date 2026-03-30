@@ -15,43 +15,46 @@ import {
 type UserPopupProps = {
   open: boolean;
   onClose: () => void;
-  onSave: (data: any) => void;
+  onSave: (data: {
+    name: string;
+    email: string;
+    role: string;
+    status: string;
+    password?: string;
+  }) => void;
+  initialData?: {
+    name?: string;
+    email?: string;
+    role?: string;
+    status?: string;
+  };
 };
 
-const UserPopup: React.FC<UserPopupProps> = ({ open, onClose, onSave }) => {
+const UserPopup: React.FC<UserPopupProps> = ({ open, onClose, onSave, initialData }) => {
   const [form, setForm] = useState({
     name: "",
     email: "",
-    role: "Admin",
-    status: "Active",
-    instagram: "",
-    facebook: "",
+    role: "admin",
+    status: "active",
+    password: "",
   });
-
-  const [profileImage, setProfileImage] = useState<string | null>(null);
 
   const handleChange = (key: string, value: string) => {
     setForm({ ...form, [key]: value });
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const imageUrl = URL.createObjectURL(file);
-      setProfileImage(imageUrl);
-    }
-  };
-
-  const handleRemoveImage = () => {
-    setProfileImage(null);
-  };
+  React.useEffect(() => {
+    setForm({
+      name: initialData?.name || "",
+      email: initialData?.email || "",
+      role: initialData?.role || "admin",
+      status: initialData?.status || "active",
+      password: "",
+    });
+  }, [initialData]);
 
   const handleSave = () => {
-    const finalData = {
-      ...form,
-      profileImage,
-    };
-    onSave(finalData);
+    onSave(form);
     onClose();
   };
 
@@ -80,7 +83,7 @@ const UserPopup: React.FC<UserPopupProps> = ({ open, onClose, onSave }) => {
         >
           <Box display="flex" justifyContent="space-between" alignItems="center">
             <Typography variant="h5" fontWeight="bold">
-              Add New User
+              {initialData ? "Edit User" : "Add New User"}
             </Typography>
             <IconButton onClick={onClose}>
               <CloseIcon />
@@ -115,6 +118,19 @@ const UserPopup: React.FC<UserPopupProps> = ({ open, onClose, onSave }) => {
             </Box>
           </Box>
 
+          <Box display="flex" gap={2} mt={3} flexWrap="wrap">
+            <Box flex={1} minWidth={250}>
+              <Typography>Password {initialData ? "(leave blank to keep)" : "*"}</Typography>
+              <TextField
+                fullWidth
+                type="password"
+                placeholder="Enter password"
+                value={form.password}
+                onChange={(e) => handleChange("password", e.target.value)}
+              />
+            </Box>
+          </Box>
+
           {/* Row 2 */}
           <Box display="flex" gap={2} mt={3} flexWrap="wrap">
             <Box flex={1} minWidth={250}>
@@ -125,8 +141,9 @@ const UserPopup: React.FC<UserPopupProps> = ({ open, onClose, onSave }) => {
                 value={form.role}
                 onChange={(e) => handleChange("role", e.target.value)}
               >
-                <MenuItem value="Admin">Admin</MenuItem>
-                <MenuItem value="User">User</MenuItem>
+                <MenuItem value="admin">Admin</MenuItem>
+                <MenuItem value="editor">Editor</MenuItem>
+                <MenuItem value="viewer">Viewer</MenuItem>
               </TextField>
             </Box>
 
@@ -138,80 +155,12 @@ const UserPopup: React.FC<UserPopupProps> = ({ open, onClose, onSave }) => {
                 value={form.status}
                 onChange={(e) => handleChange("status", e.target.value)}
               >
-                <MenuItem value="Active">Active</MenuItem>
-                <MenuItem value="Inactive">Inactive</MenuItem>
+                <MenuItem value="active">Active</MenuItem>
+                <MenuItem value="inactive">Inactive</MenuItem>
               </TextField>
             </Box>
           </Box>
-
-          {/* 🔥 Profile Upload */}
-          <Box mt={3}>
-            <Typography mb={1}>Profile Picture</Typography>
-
-            <Box display="flex" alignItems="center" gap={2}>
-              <Box
-                component="img"
-                src={
-                  profileImage ||
-                  "https://via.placeholder.com/80?text=Avatar"
-                }
-                sx={{
-                  width: 80,
-                  height: 80,
-                  borderRadius: "50%",
-                  objectFit: "cover",
-                  border: "1px solid #ddd",
-                }}
-              />
-
-              <Button variant="outlined" component="label">
-                Upload Image
-                <input
-                  hidden
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                />
-              </Button>
-
-              {profileImage && (
-                <Button color="error" onClick={handleRemoveImage}>
-                  Remove
-                </Button>
-              )}
-            </Box>
-          </Box>
-
-          {/* Social Section */}
-          <Typography mt={4} mb={1} fontWeight="bold">
-            Social Media Links
-          </Typography>
-
-          <Divider sx={{ mb: 2 }} />
-
-          <Box display="flex" gap={2} flexWrap="wrap">
-            <Box flex={1} minWidth={250}>
-              <Typography>Instagram</Typography>
-              <TextField
-                fullWidth
-                value={form.instagram}
-                onChange={(e) =>
-                  handleChange("instagram", e.target.value)
-                }
-              />
-            </Box>
-
-            <Box flex={1} minWidth={250}>
-              <Typography>Facebook</Typography>
-              <TextField
-                fullWidth
-                value={form.facebook}
-                onChange={(e) =>
-                  handleChange("facebook", e.target.value)
-                }
-              />
-            </Box>
-          </Box>
+          <Divider sx={{ my: 3 }} />
         </Box>
 
         {/* 🔥 Sticky Footer */}

@@ -1,0 +1,855 @@
+openapi: 3.1.0
+info:
+  title: GreenTvDashboard API
+  version: "0.1.0"
+  description: |
+    HTTP API for Green TV Dashboard (users, media, articles, blog posts, notifications, analytics).
+servers:
+  - url: https://api.example.com
+    description: Production
+  - url: https://staging-api.example.com
+    description: Staging
+security:
+  - bearerAuth: []
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: error
+        code:
+          type: string
+          example: VALIDATION_ERROR
+        message:
+          type: string
+          example: Missing required field: email
+        details:
+          type: object
+        traceId:
+          type: string
+      required: [status, code, message]
+    PaginationMeta:
+      type: object
+      properties:
+        page: { type: integer, example: 1 }
+        limit: { type: integer, example: 20 }
+        total: { type: integer, example: 120 }
+      required: [page, limit, total]
+    User:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        email: { type: string, format: email }
+        role: { type: string, enum: [Admin, User, Moderator] }
+        status: { type: string, enum: [active, inactive, banned] }
+        isVerified: { type: boolean }
+        avatarUrl: { type: string, format: uri }
+        socials:
+          type: object
+          properties:
+            instagram: { type: string, format: uri }
+            facebook: { type: string, format: uri }
+      required: [id, name, email, role, status, isVerified]
+    MediaItem:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        description: { type: string }
+        mediaType: { type: string, enum: [video, audio] }
+        menu: { type: string, enum: [LiveTv, Podcast] }
+        category: { type: string }
+        tags:
+          type: array
+          items: { type: string }
+        duration: { type: integer, description: Seconds }
+        fileUrl: { type: string, format: uri }
+        thumbnailUrl: { type: string, format: uri }
+        status: { type: string, enum: [processing, ready, failed] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+      required: [id, title, mediaType, menu, category, status, createdAt]
+    Article:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        subTitle: { type: string }
+        category: { type: string }
+        status: { type: string, enum: [published, draft] }
+        tags:
+          type: array
+          items: { type: string }
+        coverUrl: { type: string, format: uri }
+        content: { type: string }
+        publishedAt: { type: string, format: date-time }
+        author:
+          type: object
+          properties:
+            id: { type: string, format: uuid }
+            name: { type: string }
+            avatarUrl: { type: string, format: uri }
+      required: [id, title, category, status]
+    Post:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        description: { type: string }
+        coverUrl: { type: string, format: uri }
+        totalViews: { type: integer }
+        totalComments: { type: integer }
+        totalShares: { type: integer }
+        totalFavorites: { type: integer }
+        postedAt: { type: string, format: date-time }
+        author:
+          type: object
+          properties:
+            name: { type: string }
+            avatarUrl: { type: string, format: uri }
+      required: [id, title, coverUrl, postedAt]
+    Notification:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        description: { type: string }
+        avatarUrl: { type: string, format: uri, nullable: true }
+        type: { type: string }
+        postedAt: { type: string, format: date-time }
+        isUnread: { type: boolean }
+      required: [id, title, postedAt, isUnread]
+    DashboardSummary:
+      type: object
+      properties:
+        metrics:
+          type: object
+          properties:
+            numberOfVideo: { type: integer }
+            totalUsers: { type: integer }
+            onlineUsers: { type: integer }
+            totalPodcasts: { type: integer }
+        trendingPodcastCategory:
+          type: object
+          properties:
+            categories:
+              type: array
+              items: { type: string }
+            series:
+              type: array
+              items:
+                type: object
+                properties:
+                  name: { type: string }
+                  data:
+                    type: array
+                    items: { type: number }
+        trendingArticleCategory:
+          type: object
+          properties:
+            categories:
+              type: array
+              items: { type: string }
+            series:
+              type: array
+              items:
+                type: object
+                properties:
+                  name: { type: string }
+                  data:
+                    type: array
+                    items: { type: number }
+        usersStatus:
+          type: array
+          items:
+            type: object
+            properties:
+              label: { type: string }
+              value: { type: integer }
+        recentActivity:
+          type: array
+          items:
+            $ref: '#/components/schemas/Post'
+paths:
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: Login with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, format: password }
+              required: [email, password]
+      responses:
+        '200':
+          description: Tokens and user profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken: { type: string }
+                  refreshToken: { type: string }
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401': { description: Invalid credentials, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+  /api/auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Refresh access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refreshToken: { type: string }
+              required: [refreshToken]
+      responses:
+        '200':
+          description: New access token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken: { type: string }
+        '401':
+          description: Invalid refresh token
+  /api/auth/forgot-password:
+    post:
+      tags: [Auth]
+      summary: Send reset link
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: { type: string, format: email }
+              required: [email]
+      responses:
+        '204': { description: Email sent }
+  /api/auth/reset-password:
+    post:
+      tags: [Auth]
+      summary: Reset password with token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token: { type: string }
+                newPassword: { type: string }
+              required: [token, newPassword]
+      responses:
+        '204': { description: Password reset }
+
+  /api/users:
+    get:
+      tags: [Users]
+      summary: List users
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20 }
+        - in: query
+          name: search
+          schema: { type: string }
+        - in: query
+          name: status
+          schema: { type: string, enum: [active, inactive, banned] }
+        - in: query
+          name: role
+          schema: { type: string }
+        - in: query
+          name: sort
+          schema: { type: string, enum: [name, role, createdAt] }
+        - in: query
+          name: order
+          schema: { type: string, enum: [asc, desc], default: asc }
+      responses:
+        '200':
+          description: Paginated users
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
+    post:
+      tags: [Users]
+      summary: Create user
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                email: { type: string, format: email }
+                role: { type: string }
+                status: { type: string, enum: [active, inactive, banned], default: active }
+                avatar: { type: string, format: binary }
+                instagram: { type: string }
+                facebook: { type: string }
+              required: [name, email, role]
+      responses:
+        '201': { description: User created, content: { application/json: { schema: { $ref: '#/components/schemas/User' } } } }
+  /api/users/{id}:
+    get:
+      tags: [Users]
+      summary: Get user by id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: User, content: { application/json: { schema: { $ref: '#/components/schemas/User' } } } }
+        '404': { description: Not found }
+    put:
+      tags: [Users]
+      summary: Update user
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '200': { description: Updated user, content: { application/json: { schema: { $ref: '#/components/schemas/User' } } } }
+    delete:
+      tags: [Users]
+      summary: Delete user
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '204': { description: Deleted }
+  /api/users/{id}/status:
+    patch:
+      tags: [Users]
+      summary: Update user status
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status: { type: string, enum: [active, inactive, banned] }
+              required: [status]
+      responses:
+        '200': { description: Updated user, content: { application/json: { schema: { $ref: '#/components/schemas/User' } } } }
+
+  /api/media:
+    get:
+      tags: [Media]
+      summary: List media
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20 }
+        - in: query
+          name: search
+          schema: { type: string }
+        - in: query
+          name: category
+          schema: { type: string }
+        - in: query
+          name: menu
+          schema: { type: string, enum: [LiveTv, Podcast] }
+        - in: query
+          name: mediaType
+          schema: { type: string, enum: [video, audio] }
+        - in: query
+          name: status
+          schema: { type: string, enum: [processing, ready, failed] }
+      responses:
+        '200':
+          description: Media list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MediaItem'
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
+    post:
+      tags: [Media]
+      summary: Upload media
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file: { type: string, format: binary, description: video/* or audio/* }
+                thumbnail: { type: string, format: binary, description: image/* (video only) }
+                mediaType: { type: string, enum: [video, audio] }
+                title: { type: string }
+                description: { type: string }
+                menu: { type: string, enum: [LiveTv, Podcast] }
+                category: { type: string }
+                tags:
+                  type: array
+                  items: { type: string }
+                duration: { type: integer, description: Seconds }
+              required: [file, mediaType, title]
+      responses:
+        '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/MediaItem' } } } }
+  /api/media/{id}:
+    get:
+      tags: [Media]
+      summary: Get media by id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: Media item, content: { application/json: { schema: { $ref: '#/components/schemas/MediaItem' } } } }
+        '404': { description: Not found }
+    put:
+      tags: [Media]
+      summary: Update media metadata
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MediaItem'
+      responses:
+        '200': { description: Updated, content: { application/json: { schema: { $ref: '#/components/schemas/MediaItem' } } } }
+    delete:
+      tags: [Media]
+      summary: Delete media
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: Deleted }
+  /api/media/{id}/status:
+    patch:
+      tags: [Media]
+      summary: Update processing status (encoder callback)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status: { type: string, enum: [processing, ready, failed] }
+                fileUrl: { type: string, format: uri }
+                thumbnailUrl: { type: string, format: uri }
+                duration: { type: integer }
+              required: [status]
+      responses:
+        '200': { description: Updated, content: { application/json: { schema: { $ref: '#/components/schemas/MediaItem' } } } }
+
+  /api/articles:
+    get:
+      tags: [Articles]
+      summary: List articles
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20 }
+        - in: query
+          name: search
+          schema: { type: string }
+        - in: query
+          name: status
+          schema: { type: string, enum: [published, draft] }
+        - in: query
+          name: category
+          schema: { type: string }
+        - in: query
+          name: sort
+          schema: { type: string, enum: [publishedAt, createdAt] }
+      responses:
+        '200':
+          description: Articles list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Article'
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
+    post:
+      tags: [Articles]
+      summary: Create article
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                title: { type: string }
+                subTitle: { type: string }
+                category: { type: string }
+                status: { type: string, enum: [published, draft], default: draft }
+                tags:
+                  type: array
+                  items: { type: string }
+                cover: { type: string, format: binary }
+                content: { type: string }
+              required: [title, category]
+      responses:
+        '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/Article' } } } }
+  /api/articles/{id}:
+    get:
+      tags: [Articles]
+      summary: Get article
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: Article, content: { application/json: { schema: { $ref: '#/components/schemas/Article' } } } }
+        '404': { description: Not found }
+    put:
+      tags: [Articles]
+      summary: Update article
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Article'
+      responses:
+        '200': { description: Updated, content: { application/json: { schema: { $ref: '#/components/schemas/Article' } } } }
+    delete:
+      tags: [Articles]
+      summary: Delete article
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: Deleted }
+  /api/articles/{id}/status:
+    patch:
+      tags: [Articles]
+      summary: Publish or draft
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status: { type: string, enum: [published, draft] }
+              required: [status]
+      responses:
+        '200': { description: Updated, content: { application/json: { schema: { $ref: '#/components/schemas/Article' } } } }
+
+  /api/posts:
+    get:
+      tags: [Posts]
+      summary: List blog posts
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20 }
+        - in: query
+          name: search
+          schema: { type: string }
+        - in: query
+          name: category
+          schema: { type: string }
+        - in: query
+          name: sort
+          schema: { type: string, enum: [latest, popular, oldest], default: latest }
+      responses:
+        '200':
+          description: Posts list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Post'
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
+    post:
+      tags: [Posts]
+      summary: Create post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Post'
+      responses:
+        '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/Post' } } } }
+  /api/posts/{id}:
+    get:
+      tags: [Posts]
+      summary: Get post
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: Post, content: { application/json: { schema: { $ref: '#/components/schemas/Post' } } } }
+        '404': { description: Not found }
+    put:
+      tags: [Posts]
+      summary: Update post
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Post'
+      responses:
+        '200': { description: Updated, content: { application/json: { schema: { $ref: '#/components/schemas/Post' } } } }
+    delete:
+      tags: [Posts]
+      summary: Delete post
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: Deleted }
+
+  /api/notifications:
+    get:
+      tags: [Notifications]
+      summary: List notifications
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20 }
+        - in: query
+          name: isUnread
+          schema: { type: boolean }
+      responses:
+        '200':
+          description: Notifications list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Notification'
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
+    delete:
+      tags: [Notifications]
+      summary: Delete all notifications
+      responses:
+        '204': { description: Deleted }
+  /api/notifications/{id}:
+    patch:
+      tags: [Notifications]
+      summary: Mark notification read/unread
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                isUnread: { type: boolean }
+              required: [isUnread]
+      responses:
+        '200': { description: Updated, content: { application/json: { schema: { $ref: '#/components/schemas/Notification' } } } }
+    delete:
+      tags: [Notifications]
+      summary: Delete notification
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: Deleted }
+  /api/notifications/read-all:
+    patch:
+      tags: [Notifications]
+      summary: Mark all as read
+      responses:
+        '204': { description: Updated }
+
+  /api/dashboard/summary:
+    get:
+      tags: [Dashboard]
+      summary: Aggregated stats for widgets
+      parameters:
+        - in: query
+          name: from
+          schema: { type: string, format: date-time }
+        - in: query
+          name: to
+          schema: { type: string, format: date-time }
+        - in: query
+          name: interval
+          schema: { type: string, enum: [day, week, month] }
+      responses:
+        '200':
+          description: Summary payload for dashboard widgets
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardSummary'
+
+  /api/categories:
+    get:
+      tags: [Reference]
+      summary: List categories
+      parameters:
+        - in: query
+          name: type
+          schema: { type: string, enum: [media, article, post] }
+      responses:
+        '200':
+          description: Categories
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { type: string }
+  /api/menus:
+    get:
+      tags: [Reference]
+      summary: List menus
+      responses:
+        '200':
+          description: Menus
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { type: string }
+  /api/tags:
+    get:
+      tags: [Reference]
+      summary: List tags
+      parameters:
+        - in: query
+          name: type
+          schema: { type: string, enum: [article, media] }
+      responses:
+        '200':
+          description: Tags
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { type: string }
+
+components:
+  parameters:
+    UserId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -22,36 +22,51 @@ import {
   CardContent,
   FormControl,
   TableContainer,
+  Stack,
+  LinearProgress,
 } from "@mui/material";
+
+import { createArticle, deleteArticle, getArticles, patchArticleStatus, updateArticle, type ArticleItem } from "src/api/articles";
 
 import NewArticleModal from "../NewArticle";
 
-// 🎯 Dummy Data
-const articles = [
-  {
-    id: 1,
-    title: "Future of AI",
-    category: "Technology",
-    status: "Published",
-    date: "2026-03-20",
-  },
-  {
-    id: 2,
-    title: "Green Energy Trends",
-    category: "Sustainability",
-    status: "Draft",
-    date: "2026-03-18",
-  },
-];
-
 export default function ArticleDashboard() {
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState<string>("");
   const [newArticle, setNewArticle] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [articles, setArticles] = useState<ArticleItem[]>([]);
+  const [editing, setEditing] = useState<ArticleItem | null>(null);
 
-  const filtered = articles.filter((a) =>
-    a.title.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = useMemo(() =>
+    articles.filter((a) =>
+      a.title.toLowerCase().includes(search.toLowerCase()) &&
+      (!status || a.status === status)
+    )
+  , [articles, search, status]);
+
+  const loadArticles = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await getArticles({ status: status || undefined, search: search || undefined });
+      const items = Array.isArray(response) ? response : response.items || [];
+      setArticles(items);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unable to load articles";
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  }, [search, status]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      loadArticles();
+    }, search ? 250 : 0);
+    return () => clearTimeout(timer);
+  }, [loadArticles, search, status]);
 
   return (
     <Box p={3}>
@@ -65,7 +80,7 @@ export default function ArticleDashboard() {
           <Card>
             <CardContent>
               <Typography>Total Articles</Typography>
-              <Typography variant="h4">24</Typography>
+              <Typography variant="h4">{articles.length}</Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -75,7 +90,7 @@ export default function ArticleDashboard() {
             <CardContent>
               <Typography>Published</Typography>
               <Typography variant="h4" color="green">
-                18
+                {articles.filter((a) => a.status === "published").length}
               </Typography>
             </CardContent>
           </Card>
@@ -86,7 +101,7 @@ export default function ArticleDashboard() {
             <CardContent>
               <Typography>Drafts</Typography>
               <Typography variant="h4" color="orange">
-                6
+                {articles.filter((a) => a.status === "draft").length}
               </Typography>
             </CardContent>
           </Card>
@@ -110,13 +125,25 @@ export default function ArticleDashboard() {
             onChange={(e) => setStatus(e.target.value)}
           >
             <MenuItem value="">All</MenuItem>
-            <MenuItem value="Published">Published</MenuItem>
-            <MenuItem value="Draft">Draft</MenuItem>
+            <MenuItem value="published">Published</MenuItem>
+            <MenuItem value="draft">Draft</MenuItem>
           </Select>
         </FormControl>
 
-        <Button variant="contained" onClick={() => {setNewArticle(true) }}> New Article</Button>
+        <Button variant="contained" onClick={() => {setEditing(null); setNewArticle(true);} }> New Article</Button>
       </Box>
+
+      {error && (
+        <Box mb={2}>
+          <Typography color="error">{error}</Typography>
+        </Box>
+      )}
+
+      {loading && (
+        <Box mb={2}>
+          <LinearProgress />
+        </Box>
+      )}
 
       {/* 📄 TABLE */}
       <TableContainer component={Card}>
@@ -124,7 +151,7 @@ export default function ArticleDashboard() {
           <TableHead>
             <TableRow>
               <TableCell><b>Title</b></TableCell>
-              <TableCell><b>Category</b></TableCell>
+              <TableCell><b>Tags</b></TableCell>
               <TableCell><b>Status</b></TableCell>
               <TableCell><b>Date</b></TableCell>
               <TableCell><b>Actions</b></TableCell>
@@ -132,19 +159,39 @@ export default function ArticleDashboard() {
           </TableHead>
 
           <TableBody>
+            {loading && (
+              <TableRow>
+                <TableCell colSpan={5}>
+                  <Typography>Loading articles...</Typography>
+                </TableCell>
+              </TableRow>
+            )}
+
+            {!loading && filtered.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={5}>
+                  <Typography>No articles found.</Typography>
+                </TableCell>
+              </TableRow>
+            )}
+
             {filtered.map((article) => (
               <TableRow key={article.id}>
                 <TableCell>{article.title}</TableCell>
 
                 <TableCell>
-                  <Chip label={article.category} size="small" />
+                  <Box display="flex" gap={1} flexWrap="wrap">
+                    {article.tags?.map((t) => (
+                      <Chip key={t} label={t} size="small" />
+                    ))}
+                  </Box>
                 </TableCell>
 
                 <TableCell>
                   <Chip
                     label={article.status}
                     color={
-                      article.status === "Published"
+                      article.status === "published"
                         ? "success"
                         : "warning"
                     }
@@ -152,16 +199,40 @@ export default function ArticleDashboard() {
                   />
                 </TableCell>
 
-                <TableCell>{article.date}</TableCell>
+                <TableCell>{article.publishDate || "--"}</TableCell>
 
                 <TableCell>
-                  <IconButton>
-                    <EditIcon />
-                  </IconButton>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <IconButton onClick={() => { setEditing(article); setNewArticle(true); }}>
+                      <EditIcon />
+                    </IconButton>
 
-                  <IconButton color="error">
-                    <DeleteIcon />
-                  </IconButton>
+                    <Button size="small" variant="outlined" onClick={async () => {
+                      const next = article.status === "published" ? "draft" : "published";
+                      try {
+                        await patchArticleStatus(article.id, next as 'published' | 'draft');
+                        loadArticles();
+                      } catch (err) {
+                        const message = err instanceof Error ? err.message : "Failed to update status";
+                        setError(message);
+                      }
+                    }}>
+                      {article.status === "published" ? "Mark Draft" : "Publish"}
+                    </Button>
+
+                    <IconButton color="error" onClick={async () => {
+                      if (!window.confirm("Delete this article?")) return;
+                      try {
+                        await deleteArticle(article.id);
+                        loadArticles();
+                      } catch (err) {
+                        const message = err instanceof Error ? err.message : "Failed to delete";
+                        setError(message);
+                      }
+                    }}>
+                      <DeleteIcon />
+                    </IconButton>
+                  </Stack>
                 </TableCell>
               </TableRow>
             ))}
@@ -172,6 +243,22 @@ export default function ArticleDashboard() {
       <NewArticleModal
         open={newArticle}
         onClose={() => setNewArticle(false)}
+        initialData={editing || undefined}
+        onSave={async (data) => {
+          try {
+            if (editing) {
+              await updateArticle(editing.id, data);
+            } else {
+              await createArticle(data);
+            }
+            setNewArticle(false);
+            setEditing(null);
+            loadArticles();
+          } catch (err) {
+            const message = err instanceof Error ? err.message : "Unable to save article";
+            setError(message);
+          }
+        }}
       />
     </Box>
   );
