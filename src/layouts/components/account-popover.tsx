@@ -14,7 +14,7 @@ import MenuItem, { menuItemClasses } from '@mui/material/MenuItem';
 
 import { useRouter, usePathname } from 'src/routes/hooks';
 
-import { logout, getStoredUser } from 'src/api/auth';
+import { getMe, logout, getStoredUser } from 'src/api/auth';
 
 // ----------------------------------------------------------------------
 
@@ -38,6 +38,9 @@ export function AccountPopover({ data = [], sx, ...other }: AccountPopoverProps)
 
   useEffect(() => {
     setAccount(getStoredUser());
+    getMe()
+      .then((res) => { if (res?.user) setAccount(res.user); })
+      .catch(() => { /* token may be absent on public pages */ });
   }, []);
 
   const handleOpenPopover = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {

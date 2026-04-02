@@ -11,7 +11,7 @@ import InputAdornment from '@mui/material/InputAdornment';
 
 import { useRouter } from 'src/routes/hooks';
 
-import { login } from 'src/api/auth';
+import { getMe, login } from 'src/api/auth';
 
 import { Iconify } from 'src/components/iconify';
 
@@ -34,6 +34,7 @@ export function SignInView() {
 
       try {
         await login(email, password);
+        await getMe();
         router.push('/dashboard');
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Unable to sign in';

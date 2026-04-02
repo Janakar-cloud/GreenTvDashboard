@@ -7,7 +7,22 @@ export type UserProfile = {
   role?: string;
   status?: string;
   isVerified?: boolean;
+  emailVerified?: boolean;
   avatarUrl?: string | null;
+};
+
+export type AppConfig = {
+  publicUrl?: string;
+  dashboardUrl?: string;
+  preferredUrl?: string;
+  shouldUseDashboard?: boolean;
+  dashboardLoginUrl?: string;
+  publicLoginUrl?: string;
+};
+
+export type MeResponse = {
+  user: UserProfile;
+  app: AppConfig;
 };
 
 export type AuthTokens = {
@@ -100,6 +115,14 @@ export async function logoutApi(refreshToken: string) {
     method: "POST",
     body: JSON.stringify({ refreshToken }),
   });
+}
+
+export async function getMe() {
+  const data = await apiFetch<MeResponse>("/auth/me");
+  if (data?.user && typeof window !== "undefined") {
+    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(data.user));
+  }
+  return data;
 }
 
 export function logout() {
