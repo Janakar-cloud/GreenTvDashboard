@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 
-import Alert from '@mui/material/Alert';
-import CircularProgress from '@mui/material/CircularProgress';
 import Grid from '@mui/material/Grid';
+import Alert from '@mui/material/Alert';
 import Typography from '@mui/material/Typography';
+import CircularProgress from '@mui/material/CircularProgress';
 
 import { getDashboardSummary } from 'src/api/dashboard';
 import { DashboardContent } from 'src/layouts/dashboard';

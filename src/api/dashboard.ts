@@ -1,5 +1,25 @@
 import { apiFetch } from './client';
 
+export type HomeFeedItem = {
+  id: string;
+  title: string;
+  type: 'media' | 'article' | 'post' | 'caseStory';
+  coverUrl?: string;
+  thumbnailUrl?: string;
+  createdAt?: string;
+};
+
+export type HomeFeed = {
+  media?: HomeFeedItem[];
+  articles?: HomeFeedItem[];
+  posts?: HomeFeedItem[];
+  caseStories?: HomeFeedItem[];
+};
+
+export async function getHomeFeed() {
+  return apiFetch<HomeFeed>('/home', { auth: false });
+}
+
 export type DashboardMetric = {
   numberOfVideo: number;
   totalUsers: number;

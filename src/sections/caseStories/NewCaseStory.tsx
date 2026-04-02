@@ -1,23 +1,19 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 
 import CloseIcon from "@mui/icons-material/Close";
 import {
   Box,
-  Button,
   Card,
-  CardContent,
   Chip,
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  FormControl,
-  IconButton,
-  InputLabel,
-  MenuItem,
-  Select,
   Stack,
+  Button,
+  Dialog,
   TextField,
+  IconButton,
   Typography,
+  CardContent,
+  DialogTitle,
+  DialogContent,
 } from "@mui/material";
 
 import { type CaseStory, type CaseStoryPayload } from "src/api/caseStories";

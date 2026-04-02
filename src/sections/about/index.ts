@@ -1,2 +1,2 @@
-export { default as NewAboutBlockModal } from './NewAboutBlock';
 export * from './view';
+export { default as NewAboutBlockModal } from './NewAboutBlock';

@@ -1,6 +1,6 @@
 import type { IconButtonProps } from '@mui/material/IconButton';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 import Box from '@mui/material/Box';
 import List from '@mui/material/List';
@@ -21,10 +21,10 @@ import { fToNow } from 'src/utils/format-time';
 
 import {
   getNotifications,
-  markAllNotificationsRead,
-  markNotificationRead,
   deleteNotification,
+  markNotificationRead,
   deleteAllNotifications,
+  markAllNotificationsRead,
 } from 'src/api/notifications';
 
 import { Iconify } from 'src/components/iconify';

@@ -1,26 +1,26 @@
 import type { DragEvent, ChangeEvent } from "react";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import {
   Box,
+  Tab,
   Card,
+  Tabs,
   Button,
-  TextField,
-  Typography,
-  CardContent,
-  LinearProgress,
-  FormControl,
-  InputLabel,
   Select,
   MenuItem,
-  Tabs,
-  Tab,
+  TextField,
+  Typography,
+  InputLabel,
+  CardContent,
+  FormControl,
+  LinearProgress,
 } from "@mui/material";
 
-import { getCategories, getMenus } from "src/api/reference";
-import { createMedia, requestUploadUrl, uploadFileWithProgress } from "src/api/media";
+import { getMenus } from "src/api/reference";
+import { createMedia, requestUploadUrl, uploadFileWithProgress, getMediaCategories } from "src/api/media";
 
 export function ProductsView() {
   const [mediaType, setMediaType] = useState<"video" | "audio">("video");
@@ -59,10 +59,10 @@ export function ProductsView() {
           setMenuOptions(menusList);
         }
 
-        const categoryResponse = await getCategories("media");
+        const categoryResponse = await getMediaCategories();
         const categoryList = Array.isArray(categoryResponse)
           ? categoryResponse
-          : categoryResponse?.data || [];
+          : (categoryResponse as { data?: string[] })?.data || [];
         setCategoryOptions(categoryList);
       } catch (err) {
         console.warn("Unable to load reference data", err);

@@ -1,30 +1,30 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
-import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
-import CircularProgress from '@mui/material/CircularProgress';
+import Alert from '@mui/material/Alert';
 import Table from '@mui/material/Table';
+import Button from '@mui/material/Button';
+import TableRow from '@mui/material/TableRow';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
+import Typography from '@mui/material/Typography';
 import TableContainer from '@mui/material/TableContainer';
 import TablePagination from '@mui/material/TablePagination';
-import TableRow from '@mui/material/TableRow';
-import Typography from '@mui/material/Typography';
+import CircularProgress from '@mui/material/CircularProgress';
 
 import { DashboardContent } from 'src/layouts/dashboard';
-import { createUser, deleteUser, getUsers, patchUserStatus, updateUser } from 'src/api/users';
+import { getUsers, createUser, deleteUser, updateUser, patchUserStatus } from 'src/api/users';
 
 import { Iconify } from 'src/components/iconify';
 import { Scrollbar } from 'src/components/scrollbar';
 
+import { emptyRows } from '../utils';
 import UserPopup from '../view/user-popup';
 import { TableNoData } from '../table-no-data';
 import { UserTableRow } from '../user-table-row';
 import { UserTableHead } from '../user-table-head';
 import { TableEmptyRows } from '../table-empty-rows';
-import { emptyRows } from '../utils';
 import { UserTableToolbar } from '../user-table-toolbar';
 
 import type { UserProps } from '../user-table-row';
@@ -233,7 +233,7 @@ export function UserView() {
               } else {
                 await createUser({
                   email: data.email,
-                  password: data.password,
+                  password: data.password ?? '',
                   role: data.role,
                   name: data.name,
                   status: data.status,

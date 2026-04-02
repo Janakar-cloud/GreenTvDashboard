@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -7,8 +7,8 @@ import {
   Card,
   Grid,
   Chip,
-  Button,
   Alert,
+  Button,
   Select,
   MenuItem,
   TextField,
@@ -21,8 +21,7 @@ import {
   CircularProgress,
 } from "@mui/material";
 
-import { getCategories } from "src/api/reference";
-import { deleteMedia, getMedia, type MediaItem } from "src/api/media";
+import { getMediaCategories, getMedia, deleteMedia, type MediaItem } from "src/api/media";
 
 function extractList(response: MediaItem[] | { data?: MediaItem[] }) {
   if (Array.isArray(response)) return response;
@@ -52,8 +51,8 @@ export default function ManageVideos() {
   useEffect(() => {
     (async () => {
       try {
-        const response = await getCategories("media");
-        const list = Array.isArray(response) ? response : response?.data || [];
+        const response = await getMediaCategories();
+        const list = Array.isArray(response) ? response : (response as { data?: string[] })?.data || [];
         setCategories(list);
       } catch (err) {
         console.warn("Failed to load categories", err);

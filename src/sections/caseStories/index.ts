@@ -1,2 +1,2 @@
-export { default as NewCaseStoryModal } from './NewCaseStory';
 export * from './view';
+export { default as NewCaseStoryModal } from './NewCaseStory';

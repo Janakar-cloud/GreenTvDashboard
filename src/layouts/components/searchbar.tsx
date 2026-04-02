@@ -4,21 +4,22 @@ import { useState, useCallback } from 'react';
 import { varAlpha } from 'minimal-shared/utils';
 
 import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import ClickAwayListener from '@mui/material/ClickAwayListener';
-import CircularProgress from '@mui/material/CircularProgress';
-import Divider from '@mui/material/Divider';
-import IconButton from '@mui/material/IconButton';
-import Input from '@mui/material/Input';
-import InputAdornment from '@mui/material/InputAdornment';
 import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemText from '@mui/material/ListItemText';
+import Input from '@mui/material/Input';
 import Slide from '@mui/material/Slide';
-import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
+import Divider from '@mui/material/Divider';
+import ListItem from '@mui/material/ListItem';
 import { useTheme } from '@mui/material/styles';
+import IconButton from '@mui/material/IconButton';
+import Typography from '@mui/material/Typography';
+import ListItemText from '@mui/material/ListItemText';
+import InputAdornment from '@mui/material/InputAdornment';
+import CircularProgress from '@mui/material/CircularProgress';
+import ClickAwayListener from '@mui/material/ClickAwayListener';
 
 import { globalSearch } from 'src/api/search';
+
 import { Iconify } from 'src/components/iconify';
 
 // ----------------------------------------------------------------------
@@ -116,54 +117,54 @@ export function Searchbar({ sx, ...other }: BoxProps) {
               {loading ? <CircularProgress size={20} color="inherit" /> : 'Search'}
             </Button>
           </Box>
-          {open && (results.length > 0 || loading || error) && (
-            <Box
-              sx={{
-                position: 'absolute',
-                top: '100%',
-                left: 0,
-                right: 0,
-                zIndex: 100,
-                backgroundColor: 'background.paper',
-                boxShadow: theme.vars.customShadows.z8,
-                maxHeight: 320,
-                overflowY: 'auto',
-              }}
-            >
-              {error && (
-                <Box p={2}>
-                  <Typography color="error" variant="body2">{error}</Typography>
-                </Box>
-              )}
-              {loading && (
-                <Box p={2} display="flex" alignItems="center" gap={1}>
-                  <CircularProgress size={18} />
-                  <Typography variant="body2">Searching…</Typography>
-                </Box>
-              )}
-              {!loading && !error && results.map((group, idx) => (
-                <Box key={group.label}>
-                  <Box px={2} pt={1} pb={0.5}>
-                    <Typography variant="overline" color="text.secondary">{group.label}</Typography>
-                  </Box>
-                  <List dense disablePadding>
-                    {group.items.slice(0, 5).map((item, i) => (
-                      <ListItem key={`${group.label}-${i}`}>
-                        <ListItemText primary={item} />
-                      </ListItem>
-                    ))}
-                  </List>
-                  {idx < results.length - 1 && <Divider />}
-                </Box>
-              ))}
-              {!loading && !error && results.length === 0 && query.trim() && (
-                <Box p={2}>
-                  <Typography variant="body2">No results found.</Typography>
-                </Box>
-              )}
-            </Box>
-          )}
         </Slide>
+        {open && (results.length > 0 || loading || error) && (
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 'var(--layout-header-desktop-height)',
+              left: 0,
+              right: 0,
+              zIndex: 100,
+              backgroundColor: 'background.paper',
+              boxShadow: theme.vars.customShadows.z8,
+              maxHeight: 320,
+              overflowY: 'auto',
+            }}
+          >
+            {error && (
+              <Box p={2}>
+                <Typography color="error" variant="body2">{error}</Typography>
+              </Box>
+            )}
+            {loading && (
+              <Box p={2} display="flex" alignItems="center" gap={1}>
+                <CircularProgress size={18} />
+                <Typography variant="body2">Searching…</Typography>
+              </Box>
+            )}
+            {!loading && !error && results.map((group, idx) => (
+              <Box key={group.label}>
+                <Box px={2} pt={1} pb={0.5}>
+                  <Typography variant="overline" color="text.secondary">{group.label}</Typography>
+                </Box>
+                <List dense disablePadding>
+                  {group.items.slice(0, 5).map((item, i) => (
+                    <ListItem key={`${group.label}-${i}`}>
+                      <ListItemText primary={item} />
+                    </ListItem>
+                  ))}
+                </List>
+                {idx < results.length - 1 && <Divider />}
+              </Box>
+            ))}
+            {!loading && !error && results.length === 0 && query.trim() && (
+              <Box p={2}>
+                <Typography variant="body2">No results found.</Typography>
+              </Box>
+            )}
+          </Box>
+        )}
       </div>
     </ClickAwayListener>
   );

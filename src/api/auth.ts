@@ -1,4 +1,4 @@
-import { apiFetch, clearTokens, setTokens } from "./client";
+import { apiFetch, setTokens, clearTokens } from "./client";
 
 export type UserProfile = {
   id: string;

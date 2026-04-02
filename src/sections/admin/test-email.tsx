@@ -1,14 +1,14 @@
 import React, { useState } from "react";
 
 import {
-  Alert,
   Box,
-  Button,
   Card,
-  CardContent,
+  Alert,
   Stack,
+  Button,
   TextField,
   Typography,
+  CardContent,
 } from "@mui/material";
 
 import { sendTestEmail } from "src/api/admin";

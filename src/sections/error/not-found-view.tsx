@@ -5,7 +5,6 @@ import Typography from '@mui/material/Typography';
 
 import { RouterLink } from 'src/routes/components';
 
-import { Logo } from 'src/components/logo';
 
 // ----------------------------------------------------------------------
 

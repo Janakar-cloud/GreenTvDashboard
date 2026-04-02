@@ -92,6 +92,10 @@ export async function updateMediaStatus(
   });
 }
 
+export async function getMediaCategories() {
+  return apiFetch<{ data?: string[] } | string[]>('/media/categories', { auth: false });
+}
+
 export async function requestUploadUrl(prefix: string, contentType: string) {
   return apiFetch<{ url: string; fileUrl: string }>("/uploads/presign", {
     method: "POST",

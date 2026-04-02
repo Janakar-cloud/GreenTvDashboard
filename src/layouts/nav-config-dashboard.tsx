@@ -35,6 +35,11 @@ export const navData = [
     icon: icon('ic-user'),
   },
   {
+    title: 'Blog Posts',
+    path: '/blog',
+    icon: icon('ic-blog'),
+  },
+  {
     title: 'Case Stories',
     path: '/case-stories',
     icon: icon('ic-analytics'),
@@ -53,5 +58,15 @@ export const navData = [
     title: 'Podcast Comments',
     path: '/podcast-comments',
     icon: icon('ic-blog'),
+  },
+  {
+    title: 'Users',
+    path: '/user',
+    icon: icon('ic-user'),
+  },
+  {
+    title: 'Test Email',
+    path: '/test-email',
+    icon: icon('ic-analytics'),
   },
 ];

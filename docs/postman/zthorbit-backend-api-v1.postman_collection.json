@@ -1,65 +1,95 @@
 {
   "info": {
-    "name": "ZthOrbit Backend API (v1)
-",
+    "name": "ZthOrbit Backend API (v1)",
     "description": "Collection for testing ZthOrbit backend APIs on /api/v1. Includes seeded credentials and example error expectations.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "version": {
       "major": 1,
-      "minor": 0,
+      "minor": 1,
       "patch": 0
     }
   },
   "variable": [
-    {
-      "key": "baseUrl",
-      "value": "http://13.205.72.30/api/v1"
-    },
-    {
-      "key": "accessToken",
-      "value": ""
-    },
-    {
-      "key": "refreshToken",
-      "value": ""
-    },
-    {
-      "key": "defaultEmail",
-      "value": "superadmin@zthorbit.local"
-    },
-    {
-      "key": "defaultPassword",
-      "value": "ChangeMe123!"
-    }
+    { "key": "baseUrl", "value": "http://13.205.72.30/api/v1" },
+    { "key": "accessToken", "value": "" },
+    { "key": "refreshToken", "value": "" },
+    { "key": "defaultEmail", "value": "superadmin@zthorbit.local" },
+    { "key": "defaultPassword", "value": "ChangeMe123!" },
+    { "key": "lastCategoryId", "value": "" }
   ],
   "item": [
     {
       "name": "Auth",
       "item": [
         {
+          "name": "Register viewer (expect 202 verify)",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"newuser+{{$timestamp}}@example.com\",\n  \"password\": \"ChangeMe123!\",\n  \"name\": \"New User\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth", "register"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": [
+                "pm.test('status 202', function () { pm.response.to.have.status(202); });",
+                "pm.test('verify message', function () { pm.expect(pm.response.json().message).to.include('Verification'); });"
+              ] }
+            }
+          ]
+        },
+        {
+          "name": "Verify email (6-digit code)",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"newuser@example.com\",\n  \"code\": \"123456\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/verify-email", "host": ["{{baseUrl}}"], "path": ["auth", "verify-email"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": [
+                "pm.test('status 200', function () { pm.response.to.have.status(200); });",
+                "const json = pm.response.json();",
+                "if (json.accessToken) { pm.environment.set('accessToken', json.accessToken); }",
+                "if (json.refreshToken) { pm.environment.set('refreshToken', json.refreshToken); }"
+              ] }
+            }
+          ]
+        },
+        {
+          "name": "Resend verification code",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"newuser@example.com\"\n}" },
+            "url": { "raw": "{{baseUrl}}/auth/resend-verification", "host": ["{{baseUrl}}"], "path": ["auth", "resend-verification"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": ["pm.test('status 200', function () { pm.response.to.have.status(200); });"] }
+            }
+          ]
+        },
+        {
           "name": "Login (sets tokens)",
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"{{defaultEmail}}\",\n  \"password\": \"{{defaultPassword}}\"\n}"
             },
-            "url": {
-              "raw": "{{baseUrl}}/auth/login",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "auth",
-                "login"
-              ]
-            }
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
           },
           "event": [
             {
@@ -70,8 +100,7 @@
                   "pm.test('status 200', function () { pm.response.to.have.status(200); });",
                   "const json = pm.response.json();",
                   "if (json.accessToken) { pm.environment.set('accessToken', json.accessToken); }",
-                  "if (json.refreshToken) { pm.environment.set('refreshToken', json.refreshToken); }",
-                  "pm.environment.set('loginEmail', pm.request.body.raw.includes('email') ? JSON.parse(pm.request.body.raw).email : '{{defaultEmail}}');"
+                  "if (json.refreshToken) { pm.environment.set('refreshToken', json.refreshToken); }"
                 ]
               }
             }
@@ -81,26 +110,9 @@
           "name": "Refresh access token",
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/auth/refresh",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "auth",
-                "refresh"
-              ]
-            }
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/auth/refresh", "host": ["{{baseUrl}}"], "path": ["auth", "refresh"] }
           },
           "event": [
             {
@@ -117,378 +129,361 @@
           ]
         },
         {
+          "name": "Request password reset",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{defaultEmail}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/auth/request-reset", "host": ["{{baseUrl}}"], "path": ["auth", "request-reset"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": ["pm.test('status 200', function () { pm.response.to.have.status(200); });"] }
+            }
+          ]
+        },
+        {
+          "name": "Reset password (with token)",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"token\": \"{{resetToken}}\",\n  \"password\": \"NewPassword123!\"\n}" },
+            "url": { "raw": "{{baseUrl}}/auth/reset", "host": ["{{baseUrl}}"], "path": ["auth", "reset"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": ["pm.test('status 200', function () { pm.response.to.have.status(200); });"] }
+            }
+          ]
+        },
+        {
           "name": "Logout (revoke refresh)",
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/auth/logout",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "auth",
-                "logout"
-              ]
-            }
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/auth/logout", "host": ["{{baseUrl}}"], "path": ["auth", "logout"] }
           },
           "event": [
             {
               "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('status 200', function () { pm.response.to.have.status(200); });"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Register viewer (expect 202 verify)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"newuser+{{$timestamp}}@example.com\",\n  \"password\": \"ChangeMe123!\",\n  \"name\": \"New User\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/auth/register",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "auth",
-                "register"
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('status 202', function () { pm.response.to.have.status(202); });",
-                  "pm.test('verify message', function () { pm.expect(pm.response.json().message).to.include('Verification'); });"
-                ]
-              }
+              "script": { "type": "text/javascript", "exec": ["pm.test('status 200', function () { pm.response.to.have.status(200); });"] }
             }
           ]
         }
       ]
     },
     {
-      "name": "Users (admin/superadmin)",
+      "name": "Home",
       "item": [
         {
-          "name": "List users",
+          "name": "Get home feed (latest 4 each)",
           "request": {
             "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/users?page=1&pageSize=10",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "users"
-              ],
-              "query": [
-                {
-                  "key": "page",
-                  "value": "1"
-                },
-                {
-                  "key": "pageSize",
-                  "value": "10"
-                }
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            }
+            "url": { "raw": "{{baseUrl}}/home", "host": ["{{baseUrl}}"], "path": ["home"] }
           },
           "event": [
             {
               "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('status 200', function () { pm.response.to.have.status(200); });"
-                ]
-              }
+              "script": { "type": "text/javascript", "exec": [
+                "pm.test('status 200', function () { pm.response.to.have.status(200); });",
+                "const json = pm.response.json();",
+                "pm.test('videos capped at 4', function () { pm.expect((json.videos || []).length).to.be.at.most(4); });",
+                "pm.test('podcasts capped at 4', function () { pm.expect((json.podcasts || []).length).to.be.at.most(4); });",
+                "pm.test('articles capped at 4', function () { pm.expect((json.articles || []).length).to.be.at.most(4); });"
+              ] }
             }
           ]
+        }
+      ]
+    },
+    {
+      "name": "Live",
+      "item": [
+        {
+          "name": "Get live config (public)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/live/config", "host": ["{{baseUrl}}"], "path": ["live", "config"] }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 200', function () { pm.response.to.have.status(200); });"] } } ]
         },
         {
-          "name": "Create user",
+          "name": "Get S3 video playlist (requires auth)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/live/playlist", "host": ["{{baseUrl}}"], "path": ["live", "playlist"] },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{accessToken}}", "type": "string" } ] }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('200 or 404', function () { pm.expect([200,404]).to.include(pm.response.code); });"] } } ]
+        },
+        {
+          "name": "Request live access (requires auth)",
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"teammate+{{$timestamp}}@example.com\",\n  \"password\": \"ChangeMe123!\",\n  \"role\": \"viewer\",\n  \"name\": \"Teammate\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/users",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "users"
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            }
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{}" },
+            "url": { "raw": "{{baseUrl}}/live/access", "host": ["{{baseUrl}}"], "path": ["live", "access"] },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{accessToken}}", "type": "string" } ] }
           },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('status 201', function () { pm.response.to.have.status(201); });",
-                  "const id = pm.response.json()._id; if (id) { pm.environment.set('lastUserId', id); }"
-                ]
-              }
-            }
-          ]
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('200 or 404', function () { pm.expect([200,404]).to.include(pm.response.code); });"] } } ]
+        }
+      ]
+    },
+    {
+      "name": "Media (unified — preferred over /videos & /podcasts)",
+      "item": [
+        {
+          "name": "List all media",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/media?page=1&limit=10", "host": ["{{baseUrl}}"], "path": ["media"], "query": [ { "key": "page", "value": "1" }, { "key": "limit", "value": "10" } ] }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 200', function () { pm.response.to.have.status(200); });"] } } ]
         },
         {
-          "name": "Delete user (admin/superadmin)",
+          "name": "List videos (LiveTv menu)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/media?menu=LiveTv&page=1&limit=10", "host": ["{{baseUrl}}"], "path": ["media"], "query": [ { "key": "menu", "value": "LiveTv" }, { "key": "page", "value": "1" }, { "key": "limit", "value": "10" } ] }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 200', function () { pm.response.to.have.status(200); });"] } } ]
+        },
+        {
+          "name": "List shared media categories",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/media/categories", "host": ["{{baseUrl}}"], "path": ["media", "categories"] }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 200', function () { pm.response.to.have.status(200); });",
+            "pm.test('category payload exists', function () { pm.expect(pm.response.json().data).to.be.an('array'); });",
+            "const id = pm.response.json().data?.[0]?.id; if (id) { pm.environment.set('lastCategoryId', id); }"
+          ] } } ]
+        },
+        {
+          "name": "List podcasts (Podcast menu)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/media?menu=Podcast&page=1&limit=10", "host": ["{{baseUrl}}"], "path": ["media"], "query": [ { "key": "menu", "value": "Podcast" }, { "key": "page", "value": "1" }, { "key": "limit", "value": "10" } ] }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 200', function () { pm.response.to.have.status(200); });"] } } ]
+        },
+        {
+          "name": "Get single media item",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/media/{{lastMediaId}}", "host": ["{{baseUrl}}"], "path": ["media", "{{lastMediaId}}"] }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('200 or 404', function () { pm.expect([200,404]).to.include(pm.response.code); });"] } } ]
+        },
+        {
+          "name": "Create video media (admin/editor/superadmin)",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"Sample Video\",\n  \"description\": \"Demo video\",\n  \"mediaType\": \"video\",\n  \"menu\": \"LiveTv\",\n  \"fileUrl\": \"https://example.com/video.m3u8\",\n  \"thumbnailUrl\": \"https://example.com/thumb.jpg\",\n  \"status\": \"ready\"\n}" },
+            "url": { "raw": "{{baseUrl}}/media", "host": ["{{baseUrl}}"], "path": ["media"] },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{accessToken}}", "type": "string" } ] }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('201 created', function () { pm.response.to.have.status(201); });",
+            "const id = pm.response.json()._id || pm.response.json().id; if (id) { pm.environment.set('lastMediaId', id); }"
+          ] } } ]
+        },
+        {
+          "name": "Create audio media (admin/editor/superadmin)",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"Sample Podcast\",\n  \"description\": \"Episode description\",\n  \"mediaType\": \"audio\",\n  \"menu\": \"Podcast\",\n  \"fileUrl\": \"https://example.com/audio.mp3\",\n  \"status\": \"ready\"\n}" },
+            "url": { "raw": "{{baseUrl}}/media", "host": ["{{baseUrl}}"], "path": ["media"] },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{accessToken}}", "type": "string" } ] }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('201 created', function () { pm.response.to.have.status(201); });"
+          ] } } ]
+        },
+        {
+          "name": "Update media item (admin/editor/superadmin)",
+          "request": {
+            "method": "PUT",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"Updated Title\",\n  \"status\": \"ready\"\n}" },
+            "url": { "raw": "{{baseUrl}}/media/{{lastMediaId}}", "host": ["{{baseUrl}}"], "path": ["media", "{{lastMediaId}}"] },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{accessToken}}", "type": "string" } ] }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('200 or 404', function () { pm.expect([200,404]).to.include(pm.response.code); });"] } } ]
+        },
+        {
+          "name": "Delete media item (superadmin only)",
           "request": {
             "method": "DELETE",
-            "url": {
-              "raw": "{{baseUrl}}/users/{{lastUserId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "users",
-                "{{lastUserId}}"
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            }
+            "url": { "raw": "{{baseUrl}}/media/{{lastMediaId}}", "host": ["{{baseUrl}}"], "path": ["media", "{{lastMediaId}}"] },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{accessToken}}", "type": "string" } ] }
           },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('204 or 404', function () { pm.expect([204,404]).to.include(pm.response.code); });"
-                ]
-              }
-            }
-          ]
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('204 or 403/404', function () { pm.expect([204,403,404]).to.include(pm.response.code); });"
+          ] } } ]
         }
       ]
     },
     {
-      "name": "Dashboard",
+      "name": "Articles",
       "item": [
         {
-          "name": "Admin summary",
+          "name": "List articles",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/admin/summary",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "admin",
-                "summary"
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            }
+            "url": { "raw": "{{baseUrl}}/articles?page=1&pageSize=10", "host": ["{{baseUrl}}"], "path": ["articles"], "query": [ { "key": "page", "value": "1" }, { "key": "pageSize", "value": "10" } ] }
           },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('status 200', function () { pm.response.to.have.status(200); });"
-                ]
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "Videos",
-      "item": [
-        {
-          "name": "List videos",
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/videos?status=published",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "videos"
-              ],
-              "query": [
-                {
-                  "key": "status",
-                  "value": "published"
-                }
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('status 200', function () { pm.response.to.have.status(200); });"
-                ]
-              }
-            }
-          ]
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 200', function () { pm.response.to.have.status(200); });"] } } ]
         },
         {
-          "name": "Create video (admin/editor/superadmin)",
+          "name": "Get single article",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/articles/{{lastArticleId}}", "host": ["{{baseUrl}}"], "path": ["articles", "{{lastArticleId}}"] }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('200 or 404', function () { pm.expect([200,404]).to.include(pm.response.code); });"] } } ]
+        },
+        {
+          "name": "Create article (admin/editor/superadmin)",
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"title\": \"Sample Video\",\n  \"description\": \"Demo video\",\n  \"streamUrl\": \"https://example.com/video.m3u8\",\n  \"thumbnailUrl\": \"https://example.com/thumb.jpg\",\n  \"status\": \"published\",\n  \"isLive\": false\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/videos",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "videos"
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            }
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"Sample Article\",\n  \"subtitle\": \"A subtitle\",\n  \"bodyMd\": \"## Introduction\\n\\nArticle body here.\",\n  \"coverImage\": \"https://example.com/cover.jpg\",\n  \"status\": \"published\",\n  \"featured\": false\n}" },
+            "url": { "raw": "{{baseUrl}}/articles", "host": ["{{baseUrl}}"], "path": ["articles"] },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{accessToken}}", "type": "string" } ] }
           },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('201 created', function () { pm.response.to.have.status(201); });",
-                  "const id = pm.response.json()._id; if (id) { pm.environment.set('lastVideoId', id); }"
-                ]
-              }
-            }
-          ]
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('201 created', function () { pm.response.to.have.status(201); });",
+            "const id = pm.response.json()._id; if (id) { pm.environment.set('lastArticleId', id); }"
+          ] } } ]
         },
         {
-          "name": "Delete video (superadmin only)",
+          "name": "Update article (admin/editor/superadmin)",
+          "request": {
+            "method": "PUT",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"Updated Article Title\",\n  \"featured\": true\n}" },
+            "url": { "raw": "{{baseUrl}}/articles/{{lastArticleId}}", "host": ["{{baseUrl}}"], "path": ["articles", "{{lastArticleId}}"] },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{accessToken}}", "type": "string" } ] }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('200 or 404', function () { pm.expect([200,404]).to.include(pm.response.code); });"] } } ]
+        },
+        {
+          "name": "Delete article (admin/superadmin)",
           "request": {
             "method": "DELETE",
-            "url": {
-              "raw": "{{baseUrl}}/videos/{{lastVideoId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "videos",
-                "{{lastVideoId}}"
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            }
+            "url": { "raw": "{{baseUrl}}/articles/{{lastArticleId}}", "host": ["{{baseUrl}}"], "path": ["articles", "{{lastArticleId}}"] },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{accessToken}}", "type": "string" } ] }
           },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('204 or 403/404', function () { pm.expect([204,403,404]).to.include(pm.response.code); });"
-                ]
-              }
-            }
-          ]
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('204 or 404', function () { pm.expect([204,404]).to.include(pm.response.code); });"] } } ]
+        }
+      ]
+    },
+    {
+      "name": "Case Stories",
+      "item": [
+        {
+          "name": "List case stories",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/case-stories?page=1&pageSize=10", "host": ["{{baseUrl}}"], "path": ["case-stories"], "query": [ { "key": "page", "value": "1" }, { "key": "pageSize", "value": "10" } ] }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 200', function () { pm.response.to.have.status(200); });"] } } ]
+        },
+        {
+          "name": "Get single case story",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/case-stories/{{lastStoryId}}", "host": ["{{baseUrl}}"], "path": ["case-stories", "{{lastStoryId}}"] }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('200 or 404', function () { pm.expect([200,404]).to.include(pm.response.code); });"] } } ]
+        },
+        {
+          "name": "Create case story (admin/editor/superadmin)",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"Zero Carbon Factory\",\n  \"impact\": \"Reduced emissions by 40%\",\n  \"duration\": \"18 months\",\n  \"heroImage\": \"https://example.com/hero.jpg\",\n  \"metrics\": [\n    { \"label\": \"CO2 saved\", \"value\": \"500t\" }\n  ],\n  \"bodyMd\": \"## Overview\\n\\nStory body here.\"\n}" },
+            "url": { "raw": "{{baseUrl}}/case-stories", "host": ["{{baseUrl}}"], "path": ["case-stories"] },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{accessToken}}", "type": "string" } ] }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('201 created', function () { pm.response.to.have.status(201); });",
+            "const id = pm.response.json()._id; if (id) { pm.environment.set('lastStoryId', id); }"
+          ] } } ]
+        },
+        {
+          "name": "Update case story (admin/editor/superadmin)",
+          "request": {
+            "method": "PUT",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"Updated Story Title\"\n}" },
+            "url": { "raw": "{{baseUrl}}/case-stories/{{lastStoryId}}", "host": ["{{baseUrl}}"], "path": ["case-stories", "{{lastStoryId}}"] },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{accessToken}}", "type": "string" } ] }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('200 or 404', function () { pm.expect([200,404]).to.include(pm.response.code); });"] } } ]
+        },
+        {
+          "name": "Delete case story (admin/superadmin)",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/case-stories/{{lastStoryId}}", "host": ["{{baseUrl}}"], "path": ["case-stories", "{{lastStoryId}}"] },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{accessToken}}", "type": "string" } ] }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('204 or 404', function () { pm.expect([204,404]).to.include(pm.response.code); });"] } } ]
+        }
+      ]
+    },
+    {
+      "name": "About",
+      "item": [
+        {
+          "name": "List about blocks (public)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/about", "host": ["{{baseUrl}}"], "path": ["about"] }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 200', function () { pm.response.to.have.status(200); });"] } } ]
+        },
+        {
+          "name": "Create about block (admin/editor/superadmin)",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"kind\": \"theme\",\n  \"title\": \"Our Mission\",\n  \"body\": \"We are dedicated to sustainable engineering.\",\n  \"order\": 1\n}" },
+            "url": { "raw": "{{baseUrl}}/about", "host": ["{{baseUrl}}"], "path": ["about"] },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{accessToken}}", "type": "string" } ] }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('201 created', function () { pm.response.to.have.status(201); });",
+            "const id = pm.response.json()._id; if (id) { pm.environment.set('lastAboutId', id); }"
+          ] } } ]
+        },
+        {
+          "name": "Update about block (admin/editor/superadmin)",
+          "request": {
+            "method": "PUT",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"Updated Mission\"\n}" },
+            "url": { "raw": "{{baseUrl}}/about/{{lastAboutId}}", "host": ["{{baseUrl}}"], "path": ["about", "{{lastAboutId}}"] },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{accessToken}}", "type": "string" } ] }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('200 or 404', function () { pm.expect([200,404]).to.include(pm.response.code); });"] } } ]
+        },
+        {
+          "name": "Delete about block (admin/superadmin)",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/about/{{lastAboutId}}", "host": ["{{baseUrl}}"], "path": ["about", "{{lastAboutId}}"] },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{accessToken}}", "type": "string" } ] }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('204 or 404', function () { pm.expect([204,404]).to.include(pm.response.code); });"] } } ]
         }
       ]
     },
@@ -499,139 +494,51 @@
           "name": "List posts",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/posts?page=1&limit=10",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "posts"
-              ],
-              "query": [
-                {
-                  "key": "page",
-                  "value": "1"
-                },
-                {
-                  "key": "limit",
-                  "value": "10"
-                }
-              ]
-            }
+            "url": { "raw": "{{baseUrl}}/posts?page=1&limit=10", "host": ["{{baseUrl}}"], "path": ["posts"], "query": [ { "key": "page", "value": "1" }, { "key": "limit", "value": "10" } ] }
           },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('status 200', function () { pm.response.to.have.status(200); });"
-                ]
-              }
-            }
-          ]
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 200', function () { pm.response.to.have.status(200); });"] } } ]
+        },
+        {
+          "name": "Get single post",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/posts/{{lastPostId}}", "host": ["{{baseUrl}}"], "path": ["posts", "{{lastPostId}}"] }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('200 or 404', function () { pm.expect([200,404]).to.include(pm.response.code); });"] } } ]
         },
         {
           "name": "Create post (admin/editor/superadmin)",
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"title\": \"Sample Post\",\n  \"description\": \"Body\",\n  \"coverUrl\": \"https://example.com/cover.jpg\",\n  \"author\": { \"name\": \"Author\" }\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/posts",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "posts"
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            }
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"Sample Post\",\n  \"description\": \"Post body content\",\n  \"coverUrl\": \"https://example.com/cover.jpg\",\n  \"author\": { \"name\": \"Author Name\" }\n}" },
+            "url": { "raw": "{{baseUrl}}/posts", "host": ["{{baseUrl}}"], "path": ["posts"] },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{accessToken}}", "type": "string" } ] }
           },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('201 created', function () { pm.response.to.have.status(201); });",
-                  "const id = pm.response.json()._id; if (id) { pm.environment.set('lastPostId', id); }"
-                ]
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "Podcasts",
-      "item": [
-        {
-          "name": "List podcasts",
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/podcasts",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "podcasts"
-              ]
-            }
-          }
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('201 created', function () { pm.response.to.have.status(201); });",
+            "const id = pm.response.json()._id; if (id) { pm.environment.set('lastPostId', id); }"
+          ] } } ]
         },
         {
-          "name": "Create podcast (admin/editor/superadmin)",
+          "name": "Update post (admin/editor/superadmin)",
           "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"title\": \"Sample Podcast\",\n  \"description\": \"Episode description\",\n  \"audioUrl\": \"https://example.com/audio.mp3\",\n  \"status\": \"published\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/podcasts",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "podcasts"
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            }
-          }
+            "method": "PUT",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"Updated Post Title\"\n}" },
+            "url": { "raw": "{{baseUrl}}/posts/{{lastPostId}}", "host": ["{{baseUrl}}"], "path": ["posts", "{{lastPostId}}"] },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{accessToken}}", "type": "string" } ] }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('200 or 404', function () { pm.expect([200,404]).to.include(pm.response.code); });"] } } ]
+        },
+        {
+          "name": "Delete post (admin/superadmin)",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/posts/{{lastPostId}}", "host": ["{{baseUrl}}"], "path": ["posts", "{{lastPostId}}"] },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{accessToken}}", "type": "string" } ] }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('204 or 404', function () { pm.expect([204,404]).to.include(pm.response.code); });"] } } ]
         }
       ]
     },
@@ -639,39 +546,35 @@
       "name": "Tags",
       "item": [
         {
-          "name": "Create tag",
+          "name": "List tags (public)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/tags", "host": ["{{baseUrl}}"], "path": ["tags"] }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 200', function () { pm.response.to.have.status(200); });"] } } ]
+        },
+        {
+          "name": "Create tag (admin/editor/superadmin)",
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"sustainability\",\n  \"kind\": \"category\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/tags",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "tags"
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            }
-          }
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"sustainability\",\n  \"kind\": \"category\"\n}" },
+            "url": { "raw": "{{baseUrl}}/tags", "host": ["{{baseUrl}}"], "path": ["tags"] },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{accessToken}}", "type": "string" } ] }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('201 created', function () { pm.response.to.have.status(201); });",
+            "const id = pm.response.json()._id; if (id) { pm.environment.set('lastTagId', id); }"
+          ] } } ]
+        },
+        {
+          "name": "Delete tag (admin/superadmin)",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/tags/{{lastTagId}}", "host": ["{{baseUrl}}"], "path": ["tags", "{{lastTagId}}"] },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{accessToken}}", "type": "string" } ] }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('204 or 404', function () { pm.expect([204,404]).to.include(pm.response.code); });"] } } ]
         }
       ]
     },
@@ -682,48 +585,78 @@
           "name": "Presign upload (admin/editor/superadmin)",
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"key\": \"uploads/demo.txt\",\n  \"contentType\": \"text/plain\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/uploads/presign",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "uploads",
-                "presign"
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            }
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"prefix\": \"uploads/demo\",\n  \"contentType\": \"text/plain\"\n}" },
+            "url": { "raw": "{{baseUrl}}/uploads/presign", "host": ["{{baseUrl}}"], "path": ["uploads", "presign"] },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{accessToken}}", "type": "string" } ] }
           },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('status 200', function () { pm.response.to.have.status(200); });"
-                ]
-              }
-            }
-          ]
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 200', function () { pm.response.to.have.status(200); });"] } } ]
+        }
+      ]
+    },
+    {
+      "name": "Users (admin/superadmin)",
+      "item": [
+        {
+          "name": "List users",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/users?page=1&pageSize=10", "host": ["{{baseUrl}}"], "path": ["users"], "query": [ { "key": "page", "value": "1" }, { "key": "pageSize", "value": "10" } ] },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{accessToken}}", "type": "string" } ] }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 200', function () { pm.response.to.have.status(200); });"] } } ]
+        },
+        {
+          "name": "Create user",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"teammate+{{$timestamp}}@example.com\",\n  \"password\": \"ChangeMe123!\",\n  \"role\": \"viewer\",\n  \"name\": \"Teammate\"\n}" },
+            "url": { "raw": "{{baseUrl}}/users", "host": ["{{baseUrl}}"], "path": ["users"] },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{accessToken}}", "type": "string" } ] }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 201', function () { pm.response.to.have.status(201); });",
+            "const id = pm.response.json()._id; if (id) { pm.environment.set('lastUserId', id); }"
+          ] } } ]
+        },
+        {
+          "name": "Update user (admin/superadmin)",
+          "request": {
+            "method": "PUT",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Updated Name\",\n  \"role\": \"editor\",\n  \"status\": \"active\"\n}" },
+            "url": { "raw": "{{baseUrl}}/users/{{lastUserId}}", "host": ["{{baseUrl}}"], "path": ["users", "{{lastUserId}}"] },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{accessToken}}", "type": "string" } ] }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('200 or 404', function () { pm.expect([200,404]).to.include(pm.response.code); });"] } } ]
+        },
+        {
+          "name": "Delete user (admin/superadmin)",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/users/{{lastUserId}}", "host": ["{{baseUrl}}"], "path": ["users", "{{lastUserId}}"] },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{accessToken}}", "type": "string" } ] }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('204 or 404', function () { pm.expect([204,404]).to.include(pm.response.code); });"
+          ] } } ]
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "item": [
+        {
+          "name": "Admin summary",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/admin/summary", "host": ["{{baseUrl}}"], "path": ["admin", "summary"] },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{accessToken}}", "type": "string" } ] }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 200', function () { pm.response.to.have.status(200); });"
+          ] } } ]
         }
       ]
     },
@@ -734,51 +667,177 @@
           "name": "List notifications (any logged-in)",
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/notifications",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "notifications"
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            }
-          }
+            "url": { "raw": "{{baseUrl}}/notifications?page=1&limit=10", "host": ["{{baseUrl}}"], "path": ["notifications"], "query": [ { "key": "page", "value": "1" }, { "key": "limit", "value": "10" } ] },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{accessToken}}", "type": "string" } ] }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 200', function () { pm.response.to.have.status(200); });",
+            "const id = pm.response.json().data?.[0]?.id; if (id) { pm.environment.set('lastNotificationId', id); }"
+          ] } } ]
         },
         {
           "name": "Mark all read",
           "request": {
             "method": "PATCH",
-            "url": {
-              "raw": "{{baseUrl}}/notifications/read-all",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "notifications",
-                "read-all"
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{accessToken}}",
-                  "type": "string"
-                }
-              ]
-            }
+            "url": { "raw": "{{baseUrl}}/notifications/read-all", "host": ["{{baseUrl}}"], "path": ["notifications", "read-all"] },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{accessToken}}", "type": "string" } ] }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 204', function () { pm.response.to.have.status(204); });"] } } ]
+        },
+        {
+          "name": "Mark single notification read/unread",
+          "request": {
+            "method": "PATCH",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"isUnread\": false\n}" },
+            "url": { "raw": "{{baseUrl}}/notifications/{{lastNotificationId}}", "host": ["{{baseUrl}}"], "path": ["notifications", "{{lastNotificationId}}"] },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{accessToken}}", "type": "string" } ] }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('200 or 404', function () { pm.expect([200,404]).to.include(pm.response.code); });"] } } ]
+        },
+        {
+          "name": "Delete single notification",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/notifications/{{lastNotificationId}}", "host": ["{{baseUrl}}"], "path": ["notifications", "{{lastNotificationId}}"] },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{accessToken}}", "type": "string" } ] }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('204 or 404', function () { pm.expect([204,404]).to.include(pm.response.code); });"] } } ]
+        },
+        {
+          "name": "Delete all notifications",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/notifications", "host": ["{{baseUrl}}"], "path": ["notifications"] },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{accessToken}}", "type": "string" } ] }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 204', function () { pm.response.to.have.status(204); });"] } } ]
+        }
+      ]
+    },
+    {
+      "name": "Reference",
+      "item": [
+        {
+          "name": "Get shared categories (public)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/categories?type=media", "host": ["{{baseUrl}}"], "path": ["api", "categories"], "query": [ { "key": "type", "value": "media" } ] }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('status 200', function () { pm.response.to.have.status(200); });",
+            "pm.test('category objects returned', function () { pm.expect(pm.response.json().data).to.be.an('array'); });"
+          ] } } ]
+        },
+        {
+          "name": "Get menus (public)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/menus", "host": ["{{baseUrl}}"], "path": ["api", "menus"] }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 200', function () { pm.response.to.have.status(200); });"] } } ]
+        },
+        {
+          "name": "Get reference tags (public)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/tags", "host": ["{{baseUrl}}"], "path": ["api", "tags"] }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 200', function () { pm.response.to.have.status(200); });"] } } ]
+        }
+      ]
+    },
+    {
+      "name": "Search",
+      "item": [
+        {
+          "name": "Global search (all types)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/search?q=sustainable&type=all&limit=20", "host": ["{{baseUrl}}"], "path": ["search"], "query": [ { "key": "q", "value": "sustainable" }, { "key": "type", "value": "all" }, { "key": "limit", "value": "20" } ] }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 200', function () { pm.response.to.have.status(200); });"] } } ]
+        },
+        {
+          "name": "Search media only",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/search?q=sustainable&type=media", "host": ["{{baseUrl}}"], "path": ["search"], "query": [ { "key": "q", "value": "sustainable" }, { "key": "type", "value": "media" } ] }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 200', function () { pm.response.to.have.status(200); });"] } } ]
+        },
+        {
+          "name": "Search articles only",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/search?q=sustainable&type=articles", "host": ["{{baseUrl}}"], "path": ["search"], "query": [ { "key": "q", "value": "sustainable" }, { "key": "type", "value": "articles" } ] }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 200', function () { pm.response.to.have.status(200); });"] } } ]
+        },
+        {
+          "name": "Search missing query param (expect 400)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/search", "host": ["{{baseUrl}}"], "path": ["search"] }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('400 expected', function () { pm.response.to.have.status(400); });"] } } ]
+        }
+      ]
+    },
+    {
+      "name": "Legacy — Videos (deprecated: use /media)",
+      "item": [
+        {
+          "name": "List videos [DEPRECATED]",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/videos?status=published", "host": ["{{baseUrl}}"], "path": ["videos"], "query": [ { "key": "status", "value": "published" } ] }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 200', function () { pm.response.to.have.status(200); });"] } } ]
+        },
+        {
+          "name": "Create video [DEPRECATED]",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"Sample Video\",\n  \"description\": \"Demo video\",\n  \"streamUrl\": \"https://example.com/video.m3u8\",\n  \"thumbnailUrl\": \"https://example.com/thumb.jpg\",\n  \"status\": \"published\",\n  \"isLive\": false\n}" },
+            "url": { "raw": "{{baseUrl}}/videos", "host": ["{{baseUrl}}"], "path": ["videos"] },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{accessToken}}", "type": "string" } ] }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('201 created', function () { pm.response.to.have.status(201); });",
+            "const id = pm.response.json()._id; if (id) { pm.environment.set('lastVideoId', id); }"
+          ] } } ]
+        },
+        {
+          "name": "Delete video [DEPRECATED]",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/videos/{{lastVideoId}}", "host": ["{{baseUrl}}"], "path": ["videos", "{{lastVideoId}}"] },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{accessToken}}", "type": "string" } ] }
+          },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('204 or 403/404', function () { pm.expect([204,403,404]).to.include(pm.response.code); });"
+          ] } } ]
+        }
+      ]
+    },
+    {
+      "name": "Legacy — Podcasts (deprecated: use /media)",
+      "item": [
+        {
+          "name": "List podcasts [DEPRECATED]",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/podcasts", "host": ["{{baseUrl}}"], "path": ["podcasts"] } },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('status 200', function () { pm.response.to.have.status(200); });"] } } ]
+        },
+        {
+          "name": "Create podcast [DEPRECATED]",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"Sample Podcast\",\n  \"description\": \"Episode description\",\n  \"audioUrl\": \"https://example.com/audio.mp3\",\n  \"status\": \"published\"\n}" },
+            "url": { "raw": "{{baseUrl}}/podcasts", "host": ["{{baseUrl}}"], "path": ["podcasts"] },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{accessToken}}", "type": "string" } ] }
           }
         }
       ]
@@ -788,67 +847,17 @@
       "item": [
         {
           "name": "Unauthorized (missing token)",
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/admin/summary",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "admin",
-                "summary"
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('401 expected', function () { pm.expect([401,403]).to.include(pm.response.code); });"
-                ]
-              }
-            }
-          ]
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/admin/summary", "host": ["{{baseUrl}}"], "path": ["admin", "summary"] } },
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('401 expected', function () { pm.expect([401,403]).to.include(pm.response.code); });"] } } ]
         },
         {
           "name": "Forbidden (viewer hitting protected route)",
           "request": {
             "method": "DELETE",
-            "url": {
-              "raw": "{{baseUrl}}/videos/{{lastVideoId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "videos",
-                "{{lastVideoId}}"
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{viewerToken}}",
-                  "type": "string"
-                }
-              ]
-            }
+            "url": { "raw": "{{baseUrl}}/media/{{lastMediaId}}", "host": ["{{baseUrl}}"], "path": ["media", "{{lastMediaId}}"] },
+            "auth": { "type": "bearer", "bearer": [ { "key": "token", "value": "{{viewerToken}}", "type": "string" } ] }
           },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('403 expected', function () { pm.expect([403,401]).to.include(pm.response.code); });"
-                ]
-              }
-            }
-          ]
+          "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('403 expected', function () { pm.expect([403,401]).to.include(pm.response.code); });"] } } ]
         }
       ]
     }
