@@ -1,11 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { it, vi, expect, describe, beforeEach } from 'vitest';
 
 import {
-  getAccessToken,
-  getRefreshToken,
+  apiFetch,
   setTokens,
   clearTokens,
-  apiFetch,
+  getAccessToken,
+  getRefreshToken,
 } from 'src/api/client';
 
 // ----------------------------------------------------------------------
@@ -83,7 +83,7 @@ describe('apiFetch', () => {
       status: 200,
       headers: { get: () => 'application/json' },
       json: async () => ({ success: true }),
-      clone: function () { return this; },
+      clone () { return this; },
     };
     (fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce(mockResponse);
 
@@ -102,7 +102,7 @@ describe('apiFetch', () => {
       status: 200,
       headers: { get: () => 'application/json' },
       json: async () => payload,
-      clone: function () { return this; },
+      clone () { return this; },
     };
     (fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce(mockResponse);
 
@@ -115,7 +115,7 @@ describe('apiFetch', () => {
       ok: true,
       status: 204,
       headers: { get: () => null },
-      clone: function () { return this; },
+      clone () { return this; },
     };
     (fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce(mockResponse);
 
@@ -129,7 +129,7 @@ describe('apiFetch', () => {
       status: 404,
       headers: { get: () => 'application/json' },
       json: async () => ({ message: 'Not found' }),
-      clone: function () { return this; },
+      clone () { return this; },
     };
     (fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce(mockResponse);
 
@@ -143,7 +143,7 @@ describe('apiFetch', () => {
       status: 200,
       headers: { get: () => 'application/json' },
       json: async () => ({}),
-      clone: function () { return this; },
+      clone () { return this; },
     };
     (fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce(mockResponse);
 
@@ -160,7 +160,7 @@ describe('apiFetch', () => {
       status: 200,
       headers: { get: () => 'application/json' },
       json: async () => ({}),
-      clone: function () { return this; },
+      clone () { return this; },
     };
     (fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce(mockResponse);
 
@@ -176,7 +176,7 @@ describe('apiFetch', () => {
       status: 200,
       headers: { get: () => 'application/json' },
       json: async () => ({}),
-      clone: function () { return this; },
+      clone () { return this; },
     };
     (fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce(mockResponse);
 

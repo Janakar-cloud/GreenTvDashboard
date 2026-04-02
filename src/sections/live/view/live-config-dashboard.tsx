@@ -13,7 +13,7 @@ import {
   LinearProgress,
 } from "@mui/material";
 
-import { getLiveConfig, type LiveConfig, updateLiveConfig, getLivePlaylist, requestLiveAccess, type LivePlaylist, type LiveAccessResponse } from "src/api/live";
+import { getLiveConfig, type LiveConfig, getLivePlaylist, updateLiveConfig, requestLiveAccess, type LivePlaylist, type LiveAccessResponse } from "src/api/live";
 
 export default function LiveConfigDashboard() {
   const [form, setForm] = useState<LiveConfig>({

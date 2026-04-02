@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { it, expect, describe } from 'vitest';
 
-import { fDateTime, fDate, fToNow } from 'src/utils/format-time';
+import { fDate, fToNow, fDateTime } from 'src/utils/format-time';
 
 // ----------------------------------------------------------------------
 

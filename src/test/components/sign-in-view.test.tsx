@@ -1,7 +1,7 @@
 import React from 'react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { it, vi, expect, describe, beforeEach } from 'vitest';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 
 import * as authApi from 'src/api/auth';
 
@@ -20,6 +20,7 @@ vi.mock('src/components/iconify', () => ({
 
 // Mock MUI theme provider so components render without full theme setup
 vi.mock('@mui/material/styles', async (importOriginal) => {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-imports
   const real = await importOriginal<typeof import('@mui/material/styles')>();
   return { ...real };
 });

@@ -21,7 +21,7 @@ import {
   CircularProgress,
 } from "@mui/material";
 
-import { getMediaCategories, getMedia, deleteMedia, type MediaItem } from "src/api/media";
+import { getMedia, deleteMedia, type MediaItem, getMediaCategories } from "src/api/media";
 
 function extractList(response: MediaItem[] | { data?: MediaItem[] }) {
   if (Array.isArray(response)) return response;

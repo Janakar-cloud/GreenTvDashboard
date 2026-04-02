@@ -1,7 +1,7 @@
 import React from 'react';
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { it, vi, expect, describe } from 'vitest';
 import userEvent from '@testing-library/user-event';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 
 import * as adminApi from 'src/api/admin';
 

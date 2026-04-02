@@ -1,10 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { it, vi, expect, describe, beforeEach } from 'vitest';
 
 import * as client from 'src/api/client';
 import {
   getLiveConfig,
-  updateLiveConfig,
   getLivePlaylist,
+  updateLiveConfig,
   requestLiveAccess,
 } from 'src/api/live';
 

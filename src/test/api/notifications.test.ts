@@ -1,12 +1,12 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { it, vi, expect, describe, beforeEach } from 'vitest';
 
 import * as client from 'src/api/client';
 import {
   getNotifications,
-  markNotificationRead,
-  markAllNotificationsRead,
   deleteNotification,
+  markNotificationRead,
   deleteAllNotifications,
+  markAllNotificationsRead,
 } from 'src/api/notifications';
 
 // ----------------------------------------------------------------------

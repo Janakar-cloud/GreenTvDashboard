@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { it, expect, describe } from 'vitest';
 
-import { fNumber, fCurrency, fPercent, fShortenNumber } from 'src/utils/format-number';
+import { fNumber, fPercent, fCurrency, fShortenNumber } from 'src/utils/format-number';
 
 // ----------------------------------------------------------------------
 

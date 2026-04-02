@@ -20,7 +20,7 @@ import {
 } from "@mui/material";
 
 import { getMenus } from "src/api/reference";
-import { createMedia, requestUploadUrl, uploadFileWithProgress, getMediaCategories } from "src/api/media";
+import { createMedia, requestUploadUrl, getMediaCategories, uploadFileWithProgress } from "src/api/media";
 
 export function ProductsView() {
   const [mediaType, setMediaType] = useState<"video" | "audio">("video");

@@ -1,12 +1,12 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { it, vi, expect, describe, beforeEach } from 'vitest';
 
 import * as client from 'src/api/client';
 import {
   getMedia,
   createMedia,
-  getMediaById,
   updateMedia,
   deleteMedia,
+  getMediaById,
   getMediaCategories,
 } from 'src/api/media';
 

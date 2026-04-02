@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { it, vi, expect, describe, beforeEach } from 'vitest';
 
 import * as client from 'src/api/client';
-import { getUsers, createUser, updateUser, patchUserStatus, deleteUser } from 'src/api/users';
+import { getUsers, createUser, updateUser, deleteUser, patchUserStatus } from 'src/api/users';
 
 // ----------------------------------------------------------------------
 

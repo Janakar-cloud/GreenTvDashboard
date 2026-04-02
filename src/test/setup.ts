@@ -1,5 +1,6 @@
 import '@testing-library/jest-dom';
-import { vi, beforeEach, afterEach } from 'vitest';
+
+import { vi, afterEach, beforeEach } from 'vitest';
 
 // ----------------------------------------------------------------------
 // localStorage mock
