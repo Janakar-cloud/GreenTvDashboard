@@ -36,7 +36,7 @@ Object.defineProperty(window, 'localStorage', {
 
 vi.stubGlobal('import.meta', {
   env: {
-    VITE_API_URL: 'https://api.zthorbit.com/api',
+    VITE_API_BASE_URL: 'https://api.zthorbit.com/api',
     MODE: 'test',
     DEV: false,
     PROD: false,
