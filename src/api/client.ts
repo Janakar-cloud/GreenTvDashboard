@@ -156,6 +156,10 @@ export async function apiFetch<T = unknown>(path: string, options: ApiFetchOptio
       localStorage.removeItem("currentUser");
       window.location.href = "/sign-in";
     }
+    // Throw so callers don't receive undefined silently
+    const sessionErr = new Error("Session expired. Please sign in again.") as ApiError;
+    sessionErr.status = 401;
+    throw sessionErr;
   }
 
   if (!response.ok) {

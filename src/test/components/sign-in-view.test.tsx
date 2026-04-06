@@ -32,6 +32,7 @@ import { SignInView } from 'src/sections/auth/sign-in-view';
 describe('SignInView', () => {
   beforeEach(() => {
     vi.spyOn(authApi, 'login');
+    vi.spyOn(authApi, 'getMe').mockResolvedValue({ user: { id: '1', name: 'Admin', email: 'admin@test.com', role: 'admin' }, app: {} });
     mockRouterPush.mockClear();
   });
 
@@ -77,7 +78,7 @@ describe('SignInView', () => {
 
     await waitFor(() => {
       expect(authApi.login).toHaveBeenCalledWith('admin@test.com', 'pass123');
-      expect(mockRouterPush).toHaveBeenCalledWith('/dashboard');
+      expect(mockRouterPush).toHaveBeenCalledWith('/');
     });
   });
 
