@@ -150,6 +150,12 @@ export async function apiFetch<T = unknown>(path: string, options: ApiFetchOptio
     if (refreshed) {
       return apiFetch<T>(path, { ...options, skipRefresh: true });
     }
+    // Refresh failed — session is dead. Clear stale tokens and bounce to sign-in.
+    clearTokens();
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("currentUser");
+      window.location.href = "/sign-in";
+    }
   }
 
   if (!response.ok) {
