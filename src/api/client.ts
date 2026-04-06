@@ -34,7 +34,8 @@ function unwrapData<T>(value: MaybeWrapped<T> | null | undefined): T | undefined
 }
 
 export function getAccessToken() {
-  return typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("accessToken") || localStorage.getItem("token");
 }
 
 export function getRefreshToken() {
@@ -45,6 +46,7 @@ export function setTokens(accessToken?: string, refreshToken?: string) {
   if (typeof window === "undefined") return;
   if (accessToken) {
     localStorage.setItem("accessToken", accessToken);
+    localStorage.setItem("token", accessToken);
   }
   if (refreshToken) {
     localStorage.setItem("refreshToken", refreshToken);
@@ -54,6 +56,7 @@ export function setTokens(accessToken?: string, refreshToken?: string) {
 export function clearTokens() {
   if (typeof window === "undefined") return;
   localStorage.removeItem("accessToken");
+  localStorage.removeItem("token");
   localStorage.removeItem("refreshToken");
 }
 
@@ -121,6 +124,11 @@ export async function apiFetch<T = unknown>(path: string, options: ApiFetchOptio
   const url = path.startsWith("http") ? path : `${API_BASE_URL}${path}`;
   const headers = new Headers(options.headers || {});
   const includeAuth = options.auth !== false;
+
+  // If access token is missing but refresh token exists, try refreshing first.
+  if (includeAuth && !headers.has("Authorization") && !getAccessToken() && !options.skipRefresh) {
+    await refreshAccessToken();
+  }
 
   if (includeAuth && !headers.has("Authorization")) {
     const token = getAccessToken();

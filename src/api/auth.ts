@@ -36,6 +36,14 @@ export type LoginResponse = AuthTokens & {
 
 type MaybeWrapped<T> = T | { data?: T };
 
+type TokenCarrier = {
+  accessToken?: string;
+  refreshToken?: string;
+  token?: string;
+  access_token?: string;
+  refresh_token?: string;
+};
+
 function unwrapData<T>(value: MaybeWrapped<T> | null | undefined): T | undefined {
   if (!value || typeof value !== "object") {
     return value as T | undefined;
@@ -47,6 +55,18 @@ function unwrapData<T>(value: MaybeWrapped<T> | null | undefined): T | undefined
   }
 
   return value as T;
+}
+
+function extractTokens(payload: unknown): { accessToken?: string; refreshToken?: string } {
+  if (!payload || typeof payload !== "object") {
+    return {};
+  }
+
+  const source = payload as TokenCarrier;
+  return {
+    accessToken: source.accessToken || source.access_token || source.token,
+    refreshToken: source.refreshToken || source.refresh_token,
+  };
 }
 
 const USER_STORAGE_KEY = "currentUser";
@@ -68,9 +88,10 @@ export async function login(email: string, password: string) {
     auth: false,
   });
   const data = unwrapData<LoginResponse>(response);
+  const tokens = extractTokens(data);
 
-  if (data?.accessToken) {
-    setTokens(data.accessToken, data.refreshToken);
+  if (tokens.accessToken) {
+    setTokens(tokens.accessToken, tokens.refreshToken);
   }
 
   if (data?.user && typeof window !== "undefined") {
@@ -95,9 +116,10 @@ export async function verifyEmail(email: string, code: string) {
     auth: false,
   });
   const data = unwrapData<AuthTokens>(response);
+  const tokens = extractTokens(data);
 
-  if (data?.accessToken) {
-    setTokens(data.accessToken, data.refreshToken);
+  if (tokens.accessToken) {
+    setTokens(tokens.accessToken, tokens.refreshToken);
   }
 
   return data;

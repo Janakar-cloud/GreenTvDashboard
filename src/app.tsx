@@ -14,6 +14,7 @@ type AppProps = {
 };
 
 export default function App({ children }: AppProps) {
+  useCanonicalOrigin();
   useScrollToTop();
 
 
@@ -34,4 +35,21 @@ function useScrollToTop() {
   }, [pathname]);
 
   return null;
+}
+
+function useCanonicalOrigin() {
+  useEffect(() => {
+    const canonicalOrigin = import.meta.env.VITE_CANONICAL_ORIGIN as string | undefined;
+
+    if (!canonicalOrigin || typeof window === 'undefined') {
+      return;
+    }
+
+    if (window.location.origin === canonicalOrigin) {
+      return;
+    }
+
+    const target = `${canonicalOrigin}${window.location.pathname}${window.location.search}${window.location.hash}`;
+    window.location.replace(target);
+  }, []);
 }
