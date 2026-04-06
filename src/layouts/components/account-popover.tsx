@@ -14,7 +14,8 @@ import MenuItem, { menuItemClasses } from '@mui/material/MenuItem';
 
 import { useRouter, usePathname } from 'src/routes/hooks';
 
-import { getMe, logout, getStoredUser } from 'src/api/auth';
+import { getMe, logout, logoutApi, getStoredUser } from 'src/api/auth';
+import { getRefreshToken } from 'src/api/client';
 
 // ----------------------------------------------------------------------
 
@@ -33,13 +34,17 @@ export function AccountPopover({ data = [], sx, ...other }: AccountPopoverProps)
   const pathname = usePathname();
 
   const [account, setAccount] = useState(() => getStoredUser());
+  const [publicSiteUrl, setPublicSiteUrl] = useState<string>('');
 
   const [openPopover, setOpenPopover] = useState<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     setAccount(getStoredUser());
     getMe()
-      .then((res) => { if (res?.user) setAccount(res.user); })
+      .then((res) => {
+        if (res?.user) setAccount(res.user);
+        if (res?.app?.publicUrl) setPublicSiteUrl(res.app.publicUrl);
+      })
       .catch(() => { /* token may be absent on public pages */ });
   }, []);
 
@@ -59,10 +64,15 @@ export function AccountPopover({ data = [], sx, ...other }: AccountPopoverProps)
     [handleClosePopover, router]
   );
 
-  const handleLogout = useCallback(() => {
+  const handleLogout = useCallback(async () => {
+    const rToken = getRefreshToken();
+    if (rToken) {
+      try { await logoutApi(rToken); } catch { /* ignore server errors on logout */ }
+    }
     logout();
-    router.push('/sign-in');
-  }, [router]);
+    const destination = publicSiteUrl || import.meta.env.VITE_PUBLIC_SITE_URL || 'http://localhost:5173';
+    window.location.href = `${destination}?loggedOut=1`;
+  }, [publicSiteUrl]);
 
   const avatarInitial = account?.name?.charAt(0)?.toUpperCase() ?? '?';
   const displayName = account?.name ?? 'Account';
