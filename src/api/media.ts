@@ -92,8 +92,12 @@ export async function updateMediaStatus(
   });
 }
 
-export async function getMediaCategories() {
-  return apiFetch<{ data?: string[] } | string[]>('/media/categories', { auth: false });
+export async function getMediaCategories(): Promise<string[]> {
+  const response = await apiFetch<{ data?: unknown[] } | unknown[]>('/media/categories', { auth: false });
+  const raw = Array.isArray(response) ? response : (response as { data?: unknown[] })?.data || [];
+  return raw.map((item) =>
+    typeof item === 'string' ? item : (item as { name?: string }).name ?? String(item)
+  );
 }
 
 export async function requestUploadUrl(prefix: string, contentType: string) {

@@ -8,9 +8,13 @@ export type TagItem = {
 
 const DEFAULT_MEDIA_MENUS = ["LiveTv", "Podcast"];
 
-export async function getCategories(type?: "media" | "article" | "post") {
+export async function getCategories(type?: "media" | "article" | "post"): Promise<string[]> {
   const query = type ? `?type=${type}` : "";
-  return apiFetch<{ data?: string[] } | string[]>(`/api/categories${query}`, { auth: false });
+  const response = await apiFetch<{ data?: unknown[] } | unknown[]>(`/api/categories${query}`, { auth: false });
+  const raw = Array.isArray(response) ? response : (response as { data?: unknown[] })?.data || [];
+  return raw.map((item) =>
+    typeof item === 'string' ? item : (item as { name?: string }).name ?? String(item)
+  );
 }
 
 export async function getMenus() {

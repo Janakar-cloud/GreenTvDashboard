@@ -51,8 +51,7 @@ export default function ManageVideos() {
   useEffect(() => {
     (async () => {
       try {
-        const response = await getMediaCategories();
-        const list = Array.isArray(response) ? response : (response as { data?: string[] })?.data || [];
+        const list = await getMediaCategories();
         setCategories(list);
       } catch (err) {
         console.warn("Failed to load categories", err);

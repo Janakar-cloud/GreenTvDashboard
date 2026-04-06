@@ -57,10 +57,7 @@ export function ProductsView() {
           setMenuOptions(menusList);
         }
 
-        const categoryResponse = await getMediaCategories();
-        const categoryList = Array.isArray(categoryResponse)
-          ? categoryResponse
-          : (categoryResponse as { data?: string[] })?.data || [];
+        const categoryList = await getMediaCategories();
         setCategoryOptions(categoryList);
       } catch (err) {
         console.warn("Unable to load reference data", err);
