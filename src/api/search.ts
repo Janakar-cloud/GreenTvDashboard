@@ -1,10 +1,30 @@
 import { apiFetch } from './client';
 
+export type SearchResultItem = {
+  id: string;
+  type: string;
+  menu?: string;
+  title: string;
+  description?: string;
+  subtitle?: string;
+  thumbnailUrl?: string;
+  coverImage?: string;
+  url?: string;
+  duration?: string;
+  publishDate?: string;
+  readTime?: string;
+  tags?: string[];
+  featured?: boolean;
+  status?: string;
+};
+
 export type GlobalSearchResponse = {
-  media?: unknown[];
-  articles?: unknown[];
-  posts?: unknown[];
-  caseStories?: unknown[];
+  query: string;
+  results: {
+    media: SearchResultItem[];
+    articles: SearchResultItem[];
+  };
+  totalResults: number;
 };
 
 type SearchParams = {

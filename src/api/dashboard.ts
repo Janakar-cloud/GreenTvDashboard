@@ -25,6 +25,7 @@ export type DashboardMetric = {
   totalUsers: number;
   onlineUsers: number;
   totalPodcasts: number;
+  totalArticles: number;
 };
 
 export type DashboardSummary = {

@@ -37,7 +37,7 @@ export async function getTags(type?: "article" | "media") {
 export async function createTag(label: string, type?: string) {
   return apiFetch<TagItem>('/tags', {
     method: 'POST',
-    body: JSON.stringify({ label, type }),
+    body: JSON.stringify({ name: label, kind: type || 'category' }),
   });
 }
 

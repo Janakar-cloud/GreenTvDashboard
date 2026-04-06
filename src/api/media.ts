@@ -12,6 +12,9 @@ export type MediaItem = {
   fileUrl: string;
   thumbnailUrl?: string;
   status: "processing" | "ready" | "failed";
+  views?: number;
+  likes?: number;
+  commentsCount?: number;
   createdAt?: string;
   updatedAt?: string;
 };

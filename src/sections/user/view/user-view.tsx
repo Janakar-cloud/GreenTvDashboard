@@ -125,6 +125,21 @@ export function UserView() {
             setFilterName(event.target.value);
             table.onResetPage();
           }}
+          onDeleteSelected={async () => {
+            if (!window.confirm(`Delete ${table.selected.length} selected user(s)?`)) return;
+            setSubmitting(true);
+            setMutationError(null);
+            try {
+              await Promise.all(table.selected.map((id) => deleteUser(id)));
+              table.onSelectAllRows(false, []);
+              loadUsers();
+            } catch (err) {
+              const message = err instanceof Error ? err.message : 'Unable to delete users';
+              setMutationError(message);
+            } finally {
+              setSubmitting(false);
+            }
+          }}
         />
 
         <Scrollbar>

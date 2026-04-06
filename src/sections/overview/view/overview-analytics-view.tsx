@@ -1,11 +1,22 @@
 import { useState, useEffect } from 'react';
 
+import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import Chip from '@mui/material/Chip';
 import Grid from '@mui/material/Grid';
 import Alert from '@mui/material/Alert';
+import Table from '@mui/material/Table';
+import TableRow from '@mui/material/TableRow';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableHead from '@mui/material/TableHead';
 import Typography from '@mui/material/Typography';
+import CardContent from '@mui/material/CardContent';
 import CircularProgress from '@mui/material/CircularProgress';
+import TableContainer from '@mui/material/TableContainer';
 
 import { getDashboardSummary } from 'src/api/dashboard';
+import { getTrending, type TrendingItem } from 'src/api/engage';
 import { DashboardContent } from 'src/layouts/dashboard';
 
 import { AnalyticsNews } from '../analytics-news';
@@ -22,14 +33,21 @@ export function OverviewAnalyticsView() {
   const [summary, setSummary] = useState<Awaited<ReturnType<typeof getDashboardSummary>> | null>(
     null
   );
+  const [trending, setTrending] = useState<TrendingItem[]>([]);
 
   useEffect(() => {
     let active = true;
 
     const load = async () => {
       try {
-        const data = await getDashboardSummary();
-        if (active) setSummary(data);
+        const [data, trendingData] = await Promise.all([
+          getDashboardSummary(),
+          getTrending({ type: 'all', limit: 8, days: 30 }),
+        ]);
+        if (active) {
+          setSummary(data);
+          setTrending(trendingData.items ?? []);
+        }
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Unable to load dashboard data';
         if (active) setError(message);
@@ -50,6 +68,7 @@ export function OverviewAnalyticsView() {
     totalUsers: 0,
     onlineUsers: 0,
     totalPodcasts: 0,
+    totalArticles: 0,
   };
 
   const podcastCategory = summary?.trendingPodcastCategory ?? {
@@ -134,6 +153,20 @@ export function OverviewAnalyticsView() {
           />
         </Grid>
 
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+          <AnalyticsWidgetSummary
+            title="Total Articles"
+            percent={0}
+            total={metrics.totalArticles}
+            color="info"
+            icon={<img alt="Articles" src="/assets/icons/glass/ic-glass-buy.svg" />}
+            chart={{
+              categories: ['Total'],
+              series: [metrics.totalArticles],
+            }}
+          />
+        </Grid>
+
         <Grid size={{ xs: 12, md: 6, lg: 4 }}>
           <AnalyticsCurrentVisits
             title="Users Status"
@@ -168,7 +201,79 @@ export function OverviewAnalyticsView() {
         <Grid size={{ xs: 12, md: 6, lg: 12 }}>
           <AnalyticsNews title="Recent Activity" list={recentActivity} />
         </Grid>
+
+        {trending.length > 0 && (
+          <Grid size={{ xs: 12 }}>
+            <TrendingTable rows={trending} />
+          </Grid>
+        )}
       </Grid>
     </DashboardContent>
+  );
+}
+
+// ─── Trending Table ───────────────────────────────────────────────────────────
+
+const TYPE_COLOR: Record<string, 'primary' | 'secondary' | 'warning'> = {
+  video: 'primary',
+  podcast: 'secondary',
+  article: 'warning',
+};
+
+function TrendingTable({ rows }: { rows: TrendingItem[] }) {
+  return (
+    <Card>
+      <CardContent>
+        <Typography variant="h6" sx={{ mb: 2 }}>
+          Trending (last 30 days)
+        </Typography>
+        <TableContainer>
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>#</TableCell>
+                <TableCell>Title</TableCell>
+                <TableCell>Type</TableCell>
+                <TableCell align="right">Views</TableCell>
+                <TableCell align="right">Likes</TableCell>
+                <TableCell align="right">Comments</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {rows.map((row, idx) => (
+                <TableRow key={row._id} hover>
+                  <TableCell sx={{ color: 'text.secondary', width: 36 }}>{idx + 1}</TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                      {(row.thumbnailUrl || row.imageUrl || row.coverImage) && (
+                        <Box
+                          component="img"
+                          src={row.thumbnailUrl ?? row.imageUrl ?? row.coverImage}
+                          alt={row.title}
+                          sx={{ width: 40, height: 28, objectFit: 'cover', borderRadius: 0.5 }}
+                        />
+                      )}
+                      <Typography variant="body2" noWrap sx={{ maxWidth: 320 }}>
+                        {row.title}
+                      </Typography>
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      label={row._type}
+                      size="small"
+                      color={TYPE_COLOR[row._type] ?? 'default'}
+                    />
+                  </TableCell>
+                  <TableCell align="right">{(row.views ?? 0).toLocaleString()}</TableCell>
+                  <TableCell align="right">{(row.likes ?? 0).toLocaleString()}</TableCell>
+                  <TableCell align="right">{(row.commentsCount ?? 0).toLocaleString()}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </CardContent>
+    </Card>
   );
 }
