@@ -14,8 +14,9 @@ import MenuItem, { menuItemClasses } from '@mui/material/MenuItem';
 
 import { useRouter, usePathname } from 'src/routes/hooks';
 
-import { getMe, logout, logoutApi, getStoredUser } from 'src/api/auth';
 import { getRefreshToken } from 'src/api/client';
+
+import { getMe, logout, logoutApi, getStoredUser } from 'src/api/auth';
 
 // ----------------------------------------------------------------------
 
