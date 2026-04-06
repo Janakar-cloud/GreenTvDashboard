@@ -54,10 +54,8 @@ export function Searchbar({ sx, ...other }: BoxProps) {
     try {
       const data = await globalSearch({ q: query.trim(), type: 'all', limit: 5 });
       const next: { label: string; items: string[] }[] = [];
-      if (data.media && Array.isArray(data.media)) next.push({ label: 'Media', items: data.media.map((i: any) => i.title || i.name || 'Media item') });
-      if (data.articles && Array.isArray(data.articles)) next.push({ label: 'Articles', items: data.articles.map((i: any) => i.title || 'Article') });
-      if (data.posts && Array.isArray(data.posts)) next.push({ label: 'Posts', items: data.posts.map((i: any) => i.title || 'Post') });
-      if (data.caseStories && Array.isArray(data.caseStories)) next.push({ label: 'Case Stories', items: data.caseStories.map((i: any) => i.title || 'Case Story') });
+      if (data.results.media && Array.isArray(data.results.media)) next.push({ label: 'Media', items: data.results.media.map((i) => i.title || i.name || 'Media item') });
+      if (data.results.articles && Array.isArray(data.results.articles)) next.push({ label: 'Articles', items: data.results.articles.map((i) => i.title || 'Article') });
       setResults(next);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Search failed';
