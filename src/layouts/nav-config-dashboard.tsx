@@ -35,21 +35,6 @@ export const navData = [
     icon: icon('ic-user'),
   },
   {
-    title: 'Blog Posts',
-    path: '/blog',
-    icon: icon('ic-blog'),
-  },
-  {
-    title: 'Case Stories',
-    path: '/case-stories',
-    icon: icon('ic-analytics'),
-  },
-  {
-    title: 'About Blocks',
-    path: '/about',
-    icon: icon('ic-blog'),
-  },
-  {
     title: 'Live Config',
     path: '/live-config',
     icon: icon('ic-analytics'),
