@@ -52,9 +52,7 @@ export function ProductsView() {
     (async () => {
       try {
         const menusResponse = await getMenus();
-        const menusList = Array.isArray(menusResponse)
-          ? menusResponse
-          : menusResponse?.data || [];
+        const menusList = Array.isArray(menusResponse) ? menusResponse : [];
         if (menusList.length) {
           setMenuOptions(menusList);
         }
