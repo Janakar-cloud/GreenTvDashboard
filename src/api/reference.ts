@@ -6,18 +6,28 @@ export type TagItem = {
   type?: string;
 };
 
+const DEFAULT_MEDIA_MENUS = ["LiveTv", "Podcast"];
+
 export async function getCategories(type?: "media" | "article" | "post") {
   const query = type ? `?type=${type}` : "";
-  return apiFetch<{ data?: string[] } | string[]>(`/categories${query}`, { auth: false });
+  return apiFetch<{ data?: string[] } | string[]>(`/api/categories${query}`, { auth: false });
 }
 
 export async function getMenus() {
-  return apiFetch<{ data?: string[] } | string[]>("/menus", { auth: false });
+  const result = await apiFetch<{ data?: string[] }>(`/api/menus`, { auth: false }).catch(
+    () => null
+  );
+
+  if (result && typeof result === "object" && "data" in result && Array.isArray(result.data)) {
+    return result.data;
+  }
+
+  return DEFAULT_MEDIA_MENUS;
 }
 
 export async function getTags(type?: "article" | "media") {
   const query = type ? `?type=${type}` : "";
-  return apiFetch<TagItem[] | { data?: TagItem[] }>(`/tags${query}`, { auth: false });
+  return apiFetch<TagItem[] | { data?: TagItem[] }>(`/api/tags${query}`, { auth: false });
 }
 
 export async function createTag(label: string, type?: string) {

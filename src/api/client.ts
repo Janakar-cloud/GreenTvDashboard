@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api/v1";
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "/api/v1").replace(/\/$/, "");
 
 export type PaginationMeta = {
   page: number;
@@ -17,6 +17,21 @@ type ApiFetchOptions = RequestInit & {
 };
 
 let refreshPromise: Promise<string | null> | null = null;
+
+type MaybeWrapped<T> = T | { data?: T };
+
+function unwrapData<T>(value: MaybeWrapped<T> | null | undefined): T | undefined {
+  if (!value || typeof value !== "object") {
+    return value as T | undefined;
+  }
+
+  if ("data" in value) {
+    const nested = (value as { data?: T }).data;
+    if (nested !== undefined) return nested;
+  }
+
+  return value as T;
+}
 
 export function getAccessToken() {
   return typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
@@ -83,10 +98,11 @@ export async function refreshAccessToken(): Promise<string | null> {
         throw await buildError(response);
       }
 
-      const data = await response.json();
+      const payload = await response.json();
+      const data = unwrapData<{ accessToken?: string; refreshToken?: string }>(payload);
       if (data?.accessToken) {
-        setTokens(data.accessToken, token);
-        return data.accessToken as string;
+        setTokens(data.accessToken, data.refreshToken || token);
+        return data.accessToken;
       }
 
       return null;

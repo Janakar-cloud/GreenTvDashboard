@@ -10,10 +10,19 @@ This document explains how the frontend team should deploy the separate dashboar
 
 This guide assumes:
 
-- The dashboard repository is already cloned at `~/dashboard/GreenTvDashboard`
 - The backend API from this repository is already running on the EC2 server
 - Nginx is already installed on the EC2 server
 - Ubuntu user is `ubuntu`
+
+> **Two-folder model — important.**
+> There are always two separate folders in this setup:
+>
+> | Folder | Purpose |
+> |---|---|
+> | `~/dashboard/GreenTvDashboard` | Source repo — `git pull` and `npm run build` happen here |
+> | `/var/www/dashboard/GreenTvDashboard` | Web root — only the built `dist/` contents go here, served by Nginx |
+>
+> Never run `git pull` in the web root. Never point Nginx at the source repo.
 
 ## Why This Setup
 
@@ -29,11 +38,27 @@ dashboard.thegreentv.com -> 13.205.72.30
 
 Wait until DNS resolves before requesting the SSL certificate.
 
-## 2. Prepare Deployment Directory
+## 2. Prepare Both Directories
+
+Create the **web root** (static files only, served by Nginx):
 
 ```bash
 sudo mkdir -p /var/www/dashboard/GreenTvDashboard
 sudo chown -R ubuntu:ubuntu /var/www/dashboard
+```
+
+Clone the **source repo** (if not already present):
+
+```bash
+mkdir -p ~/dashboard
+git clone -b Backend https://github.com/murali091988/GreenTvDashboard.git ~/dashboard/GreenTvDashboard
+```
+
+If the source repo already exists, just pull:
+
+```bash
+cd ~/dashboard/GreenTvDashboard
+git pull origin Backend
 ```
 
 ## 3. Pull and Build the Dashboard
@@ -193,16 +218,84 @@ pm2 logs
 
 ## 8. Future Update Flow
 
-For every new dashboard release:
+For every new dashboard release, always work from the **source repo**, not the web root:
+
+```bash
+# 1. Update source repo
+cd ~/dashboard/GreenTvDashboard
+git pull origin Backend
+
+# 2. Install and build
+npm ci
+npm run build
+
+# 3. Deploy built files to web root
+rsync -av --delete dist/ /var/www/dashboard/GreenTvDashboard/
+
+# 4. Confirm Nginx config is still valid and reload
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+> Quick check: `/var/www/dashboard/GreenTvDashboard/` should contain `index.html` and an `assets/` folder — never `main.tsx`, `package.json`, or a `.git` directory.
+
+## 8a. Recovery: Web Root Accidentally Contains Source Files or Has No .git
+
+If you see `git pull` failing in `/var/www/dashboard/GreenTvDashboard/` or that folder contains source files (`src/`, `package.json`, etc.) instead of only built output, follow these steps:
+
+**Step 1 — Set up the correct source repo location:**
+
+```bash
+mkdir -p ~/dashboard
+# Only if ~/dashboard/GreenTvDashboard does not already exist:
+git clone -b Backend https://github.com/murali091988/GreenTvDashboard.git ~/dashboard/GreenTvDashboard
+# If it already exists:
+# cd ~/dashboard/GreenTvDashboard && git pull origin Backend
+```
+
+**Step 2 — Create the env file and build:**
 
 ```bash
 cd ~/dashboard/GreenTvDashboard
-git pull origin Backend
+cat > .env.production <<'EOF'
+VITE_API_BASE_URL=/api/v1
+EOF
 npm ci
 npm run build
-rsync -av --delete dist/ /var/www/dashboard/GreenTvDashboard/
+```
+
+**Step 3 — Wipe and re-deploy the web root:**
+
+```bash
+rm -rf /var/www/dashboard/GreenTvDashboard/*
+rsync -av dist/ /var/www/dashboard/GreenTvDashboard/
+```
+
+**Step 4 — Confirm Nginx root is correct:**
+
+The Nginx config must have:
+
+```nginx
+root /var/www/dashboard/GreenTvDashboard;
+```
+
+Verify and reload:
+
+```bash
+grep -n 'root' /etc/nginx/sites-available/greentv-dashboard
 sudo nginx -t
 sudo systemctl reload nginx
+```
+
+**Step 5 — Verify:**
+
+```bash
+ls /var/www/dashboard/GreenTvDashboard/
+# Expected: assets/  index.html
+# Must NOT contain: src/  main.tsx  package.json  .git
+
+curl -I https://dashboard.thegreentv.com
+curl -I https://dashboard.thegreentv.com/api/v1/home
 ```
 
 ## 9. Important Notes

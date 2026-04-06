@@ -34,6 +34,21 @@ export type LoginResponse = AuthTokens & {
   user?: UserProfile;
 };
 
+type MaybeWrapped<T> = T | { data?: T };
+
+function unwrapData<T>(value: MaybeWrapped<T> | null | undefined): T | undefined {
+  if (!value || typeof value !== "object") {
+    return value as T | undefined;
+  }
+
+  if ("data" in value) {
+    const nested = (value as { data?: T }).data;
+    if (nested !== undefined) return nested;
+  }
+
+  return value as T;
+}
+
 const USER_STORAGE_KEY = "currentUser";
 
 export function getStoredUser(): UserProfile | null {
@@ -47,11 +62,12 @@ export function getStoredUser(): UserProfile | null {
 }
 
 export async function login(email: string, password: string) {
-  const data = await apiFetch<LoginResponse>("/auth/login", {
+  const response = await apiFetch<MaybeWrapped<LoginResponse>>("/auth/login", {
     method: "POST",
     body: JSON.stringify({ email, password }),
     auth: false,
   });
+  const data = unwrapData<LoginResponse>(response);
 
   if (data?.accessToken) {
     setTokens(data.accessToken, data.refreshToken);
@@ -73,11 +89,12 @@ export async function register(email: string, password: string, name?: string) {
 }
 
 export async function verifyEmail(email: string, code: string) {
-  const data = await apiFetch<AuthTokens>("/auth/verify-email", {
+  const response = await apiFetch<MaybeWrapped<AuthTokens>>("/auth/verify-email", {
     method: "POST",
     body: JSON.stringify({ email, code }),
     auth: false,
   });
+  const data = unwrapData<AuthTokens>(response);
 
   if (data?.accessToken) {
     setTokens(data.accessToken, data.refreshToken);
@@ -118,11 +135,12 @@ export async function logoutApi(refreshToken: string) {
 }
 
 export async function getMe() {
-  const data = await apiFetch<MeResponse>("/auth/me");
+  const response = await apiFetch<MaybeWrapped<MeResponse>>("/auth/me");
+  const data = unwrapData<MeResponse>(response);
   if (data?.user && typeof window !== "undefined") {
     localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(data.user));
   }
-  return data;
+  return data as MeResponse;
 }
 
 export function logout() {

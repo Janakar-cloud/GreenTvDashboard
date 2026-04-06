@@ -1,7 +1,7 @@
 import { it, vi, expect, describe, beforeEach } from 'vitest';
 
 import * as client from 'src/api/client';
-import { login, register, logoutApi, getStoredUser } from 'src/api/auth';
+import { login, register, logoutApi, getStoredUser, getMe } from 'src/api/auth';
 
 // ----------------------------------------------------------------------
 
@@ -38,6 +38,19 @@ describe('login', () => {
     await login('user@test.com', 'pass');
 
     expect(client.setTokens).toHaveBeenCalledWith('acc-token', 'ref-token');
+  });
+
+  it('stores tokens when login response is wrapped in data', async () => {
+    (client.apiFetch as ReturnType<typeof vi.spyOn>).mockResolvedValueOnce({
+      data: {
+        accessToken: 'wrapped-acc',
+        refreshToken: 'wrapped-ref',
+      },
+    });
+
+    await login('user@test.com', 'pass');
+
+    expect(client.setTokens).toHaveBeenCalledWith('wrapped-acc', 'wrapped-ref');
   });
 
   it('stores user in localStorage when present', async () => {
@@ -95,6 +108,23 @@ describe('getStoredUser', () => {
   it('returns null when stored value is malformed JSON', () => {
     localStorage.setItem('currentUser', '{bad json}');
     expect(getStoredUser()).toBeNull();
+  });
+});
+
+// ----------------------------------------------------------------------
+
+describe('getMe', () => {
+  it('returns profile when /auth/me payload is wrapped in data', async () => {
+    const profile = {
+      user: { id: '2', name: 'Bob', email: 'bob@test.com', role: 'user' },
+      app: {},
+    };
+    (client.apiFetch as ReturnType<typeof vi.spyOn>).mockResolvedValueOnce({ data: profile });
+
+    const result = await getMe();
+
+    expect(result).toMatchObject(profile);
+    expect(JSON.parse(localStorage.getItem('currentUser') || '{}')).toMatchObject(profile.user);
   });
 });
 
