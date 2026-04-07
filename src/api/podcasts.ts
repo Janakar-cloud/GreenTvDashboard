@@ -1,7 +1,8 @@
 import { apiFetch } from './client';
 
 export type PodcastComment = {
-  id: string;
+  id: string;   // normalised from _id
+  _id?: string; // raw from backend
   podcastId: string;
   author: string;
   message: string;
@@ -9,9 +10,24 @@ export type PodcastComment = {
   createdAt?: string;
 };
 
+type PublicCommentsResponse = {
+  commentsEnabled: boolean;
+  comments: (Omit<PodcastComment, 'id'> & { _id: string })[];
+};
+
+function normaliseComment(c: Omit<PodcastComment, 'id'> & { _id: string }): PodcastComment {
+  return { ...c, id: c._id };
+}
+
 export async function getPodcastComments(id: string, includeHidden = false) {
-  const path = includeHidden ? `/podcasts/${id}/comments/all` : `/podcasts/${id}/comments`;
-  return apiFetch<PodcastComment[]>(path, { auth: !includeHidden });
+  if (includeHidden) {
+    // /comments/all returns a plain array (admin route)
+    const data = await apiFetch<(Omit<PodcastComment, 'id'> & { _id: string })[]>(`/podcasts/${id}/comments/all`, { auth: true });
+    return (data ?? []).map(normaliseComment);
+  }
+  // /comments returns { commentsEnabled, comments[] }
+  const data = await apiFetch<PublicCommentsResponse>(`/podcasts/${id}/comments`);
+  return (data?.comments ?? []).map(normaliseComment);
 }
 
 export async function addPodcastComment(id: string, payload: { author: string; message: string; parentCommentId?: string }) {
