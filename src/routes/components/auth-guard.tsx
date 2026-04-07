@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 
 import { Navigate, useLocation } from 'react-router-dom';
 
-import { getAccessToken, clearTokens } from 'src/api/client';
+import { getAccessToken, setTokens, clearTokens } from 'src/api/client';
 
 function isTokenExpired(token: string): boolean {
   try {
@@ -20,6 +20,19 @@ type AuthGuardProps = {
 
 export function AuthGuard({ children }: AuthGuardProps) {
   const location = useLocation();
+
+  // Handle token hand-off from public site (tokens passed as URL params)
+  const searchParams = new URLSearchParams(location.search);
+  const urlAccessToken = searchParams.get('access_token');
+  const urlRefreshToken = searchParams.get('refresh_token');
+  if (urlAccessToken) {
+    setTokens(urlAccessToken, urlRefreshToken || undefined);
+    searchParams.delete('access_token');
+    searchParams.delete('refresh_token');
+    const cleanSearch = searchParams.toString();
+    return <Navigate to={location.pathname + (cleanSearch ? '?' + cleanSearch : '')} replace />;
+  }
+
   const accessToken = getAccessToken();
 
   if (!accessToken || isTokenExpired(accessToken)) {
