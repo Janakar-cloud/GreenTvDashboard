@@ -54,32 +54,6 @@ export function ProductFilters({
   onCloseFilter,
   onResetFilter,
 }: ProductFiltersProps) {
-  const _renderGender = (
-    <Stack spacing={1}>
-      <Typography variant="subtitle2">Gender</Typography>
-      <FormGroup>
-        {options.genders.map((option) => (
-          <FormControlLabel
-            key={option.value}
-            control={
-              <Checkbox
-                checked={filters.gender.includes(option.value)}
-                onChange={() => {
-                  const checked = filters.gender.includes(option.value)
-                    ? filters.gender.filter((value) => value !== option.value)
-                    : [...filters.gender, option.value];
-
-                  onSetFilters({ gender: checked });
-                }}
-              />
-            }
-            label={option.label}
-          />
-        ))}
-      </FormGroup>
-    </Stack>
-  );
-
   const renderCategory = (
     <Stack spacing={1}>
       <Typography variant="subtitle2">Category</Typography>
@@ -92,39 +66,6 @@ export function ProductFilters({
               <Radio
                 checked={filters.category.includes(option.value)}
                 onChange={() => onSetFilters({ category: option.value })}
-              />
-            }
-            label={option.label}
-          />
-        ))}
-      </RadioGroup>
-    </Stack>
-  );
-
-  const _renderColors = (
-    <Stack spacing={1}>
-      <Typography variant="subtitle2">Colors</Typography>
-      <ColorPicker
-        options={options.colors}
-        value={filters.colors}
-        onChange={(colors) => onSetFilters({ colors: colors as string[] })}
-        limit={6}
-      />
-    </Stack>
-  );
-
-  const _renderPrice = (
-    <Stack spacing={1}>
-      <Typography variant="subtitle2">Price</Typography>
-      <RadioGroup>
-        {options.price.map((option) => (
-          <FormControlLabel
-            key={option.value}
-            value={option.value}
-            control={
-              <Radio
-                checked={filters.price.includes(option.value)}
-                onChange={() => onSetFilters({ price: option.value })}
               />
             }
             label={option.label}

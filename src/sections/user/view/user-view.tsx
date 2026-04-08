@@ -40,7 +40,7 @@ export function UserView() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [_submitting, setSubmitting] = useState(false);
+  const [, setSubmitting] = useState(false);
   const [mutationError, setMutationError] = useState<string | null>(null);
 
   const loadUsers = useCallback(async () => {
