@@ -8,7 +8,6 @@ import {
   Card,
   Chip,
   Table,
-  Button,
   Switch,
   Tooltip,
   TableRow,
@@ -135,17 +134,9 @@ export default function PodcastCommentsDashboard() {
               control={<Switch checked={includeHidden} onChange={(e) => setIncludeHidden(e.target.checked)} />}
               label="Include hidden"
             />
-            <Button variant="contained" onClick={loadComments} disabled={!podcastId || loading}>
-              {loading ? "Loading…" : "Refresh"}
-            </Button>
             <Chip label={`Visible: ${visibleCount}`} color="success" variant="outlined" />
             <Chip label={`Hidden: ${hiddenCount}`} color="warning" variant="outlined" />
           </Box>
-          {selectedPodcast && (
-            <Typography variant="body2" color="text.secondary" mt={1}>
-              ID: {selectedPodcast.id}
-            </Typography>
-          )}
           {error && (
             <Typography color="error" variant="body2" mt={1}>
               {error}
