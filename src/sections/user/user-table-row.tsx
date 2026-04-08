@@ -23,6 +23,7 @@ export type UserProps = {
   // company: string;
   avatarUrl: string;
   isVerified: boolean;
+  createdAt?: string;
 };
 
 type UserTableRowProps = {
@@ -81,6 +82,10 @@ export function UserTableRow({ row, selected, onSelectRow, onEdit, onDelete, onT
           <Label color={(row.status === 'inactive' && 'warning') || (row.status === 'banned' && 'error') || 'success'}>
             {row.status}
           </Label>
+        </TableCell>
+
+        <TableCell sx={{ color: 'text.secondary', whiteSpace: 'nowrap' }}>
+          {row.createdAt ? new Date(row.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
         </TableCell>
 
         <TableCell align="right">

@@ -66,6 +66,7 @@ export function UserView() {
           status: item.status,
           avatarUrl: item.avatarUrl ?? '',
           isVerified: Boolean(item.isVerified),
+          createdAt: item.createdAt,
         }))
       );
       setTotal(meta?.total ?? payload.length);
@@ -163,6 +164,7 @@ export function UserView() {
                   { id: 'role', label: 'Role' },
                   { id: 'isVerified', label: 'Verified', align: 'center' },
                   { id: 'status', label: 'Status' },
+                  { id: 'createdAt', label: 'Joined' },
                   { id: '' },
                 ]}
               />
@@ -288,10 +290,10 @@ function TableRowLoading({ rows }: { rows: number }) {
 
 export function useTable() {
   const [page, setPage] = useState(0);
-  const [orderBy, setOrderBy] = useState('name');
+  const [orderBy, setOrderBy] = useState('createdAt');
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [selected, setSelected] = useState<string[]>([]);
-  const [order, setOrder] = useState<'asc' | 'desc'>('asc');
+  const [order, setOrder] = useState<'asc' | 'desc'>('desc');
 
   const onSort = useCallback(
     (id: string) => {

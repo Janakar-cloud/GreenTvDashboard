@@ -8,6 +8,8 @@ export type UserItem = {
   status: string;
   isVerified: boolean;
   avatarUrl?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export type UsersResponse = {

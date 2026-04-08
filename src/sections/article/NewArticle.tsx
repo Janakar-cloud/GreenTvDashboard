@@ -221,14 +221,6 @@ export default function NewArticleModal({ open, onClose, onSave, initialData }: 
 
                         <TextField
                             fullWidth
-                            label="Cover Image URL"
-                            value={coverImage}
-                            onChange={(e) => setCoverImage(e.target.value)}
-                            sx={{ mb: 3 }}
-                        />
-
-                        <TextField
-                            fullWidth
                             label="Publish Date (ISO)"
                             placeholder="2026-03-26T10:00:00.000Z"
                             value={publishDate}
