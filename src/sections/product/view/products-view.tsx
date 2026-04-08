@@ -223,11 +223,20 @@ export function ProductsView() {
             centered
             sx={{
               mt: 2,
+
+              // 🔲 Bottom border for whole tabs
+
+              // 🔵 Active tab indicator (line under selected tab)
+              "& .MuiTabs-indicator": {
+                backgroundColor: "#5cb039",
+                height: 3,
+              },
               "& .MuiTab-root": {
-                fontSize: "16px",   
+                fontSize: "16px",
                 fontWeight: 600,
-                minHeight: 60,      
+                minHeight: 60,
                 padding: "12px 24px",
+                      color: "#5cb039", // grey text
               },
             }}
           >
@@ -242,7 +251,7 @@ export function ProductsView() {
             onDragOver={(e) => e.preventDefault()}
             onClick={() => fileRef.current?.click()}
             sx={{
-              border: "2px dashed #6366f1",
+              border: "2px dashed #5cb039",
               borderRadius: 3,
               p: 3,
               textAlign: "center",
@@ -295,7 +304,7 @@ export function ProductsView() {
                 }}
                 onDragOver={(e) => e.preventDefault()}
                 sx={{
-                  border: "2px dashed #10b981",
+                  border: "2px dashed #5cb039",
                   borderRadius: 3,
                   p: 2,
                   textAlign: "center",
