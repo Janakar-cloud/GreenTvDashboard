@@ -1,4 +1,25 @@
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "/api/v1").replace(/\/$/, "");
+// If VITE_API_BASE_URL is an absolute URL pointing at a different host than the
+// current page (e.g. http://13.205.72.30:4000/api/v1), the browser will make a
+// cross-origin request and trigger CORS errors.  Force a relative path so every
+// request is same-origin and goes through the Vite dev proxy / Nginx proxy.
+const _rawBase = (import.meta.env.VITE_API_BASE_URL || "/api/v1").replace(/\/$/, "");
+const API_BASE_URL = (() => {
+  if (!_rawBase.startsWith("http")) return _rawBase; // already relative — fine
+  try {
+    const configured = new URL(_rawBase);
+    const current = new URL(window.location.href);
+    // Same origin: safe to use as-is
+    if (configured.origin === current.origin) return _rawBase;
+    // Different origin: fall back to relative path to avoid CORS
+    console.warn(
+      `[api] VITE_API_BASE_URL (${_rawBase}) points to a different origin. ` +
+      `Using "/api/v1" to route through the dev proxy / Nginx instead.`
+    );
+    return "/api/v1";
+  } catch {
+    return "/api/v1";
+  }
+})();
 
 export type PaginationMeta = {
   page: number;

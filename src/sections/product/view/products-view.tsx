@@ -7,20 +7,25 @@ import {
   Box,
   Tab,
   Card,
+  Chip,
   Tabs,
   Button,
   Select,
+  Checkbox,
   MenuItem,
   TextField,
   Typography,
   InputLabel,
   CardContent,
   FormControl,
+  OutlinedInput,
   LinearProgress,
+  ListItemText,
+  FormHelperText,
 } from "@mui/material";
 
 import { getMenus } from "src/api/reference";
-import { createMedia, requestUploadUrl, getMediaCategories, uploadFileWithProgress } from "src/api/media";
+import { type CategoryOption, createMedia, requestUploadUrl, getMediaCategories, uploadFileWithProgress } from "src/api/media";
 
 export function ProductsView() {
   const [mediaType, setMediaType] = useState<"video" | "audio">("video");
@@ -32,13 +37,13 @@ export function ProductsView() {
   const [thumbPreview, setThumbPreview] = useState<string | null>(null);
 
   const [menu, setMenu] = useState<string>("");
-  const [category, setCategory] = useState<string>("");
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
 
   const [title, setTitle] = useState<string>("");
   const [description, setDescription] = useState<string>("");
 
   const [menuOptions, setMenuOptions] = useState<string[]>(["LiveTv", "Podcast"]);
-  const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
+  const [categoryOptions, setCategoryOptions] = useState<CategoryOption[]>([]);
 
   const [progress, setProgress] = useState<number>(0);
   const [uploading, setUploading] = useState(false);
@@ -133,7 +138,7 @@ export function ProductsView() {
     setThumbnail(null);
     setThumbPreview(null);
     setMenu("");
-    setCategory("");
+    setSelectedCategoryIds([]);
     setTitle("");
     setDescription("");
     setProgress(0);
@@ -148,6 +153,11 @@ export function ProductsView() {
 
     if (!menu) {
       setError("Please choose a menu (LiveTv or Podcast).");
+      return;
+    }
+
+    if (selectedCategoryIds.length < 2) {
+      setError("Please select at least 2 categories.");
       return;
     }
 
@@ -182,7 +192,7 @@ export function ProductsView() {
         description: description || undefined,
         mediaType,
         menu: menu as "LiveTv" | "Podcast",
-        category: category || undefined,
+        categories: selectedCategoryIds,
         fileUrl,
         thumbnailUrl,
         status: "ready",
@@ -403,23 +413,47 @@ export function ProductsView() {
             </FormControl>
           </Box>
 
-          {/* CATEGORY */}
+          {/* CATEGORY — multi-select, min 2 */}
           <Box mt={3}>
-            <FormControl fullWidth>
-              <InputLabel>Category</InputLabel>
+            <FormControl fullWidth error={selectedCategoryIds.length > 0 && selectedCategoryIds.length < 2}>
+              <InputLabel>Categories (select at least 2)</InputLabel>
               <Select
-                value={category}
-                label="Category"
-                onChange={(e) => setCategory(e.target.value)}
+                multiple
+                value={selectedCategoryIds}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setSelectedCategoryIds(typeof val === 'string' ? [val] : val as string[]);
+                }}
+                input={<OutlinedInput label="Categories (select at least 2)" />}
+                renderValue={(selected) =>
+                  (selected as string[])
+                    .map((id) => categoryOptions.find((c) => c.id === id)?.name || id)
+                    .join(', ')
+                }
                 disabled={uploading}
               >
-                <MenuItem value="">Select Category</MenuItem>
                 {categoryOptions.map((opt) => (
-                  <MenuItem key={opt} value={opt}>
-                    {opt}
+                  <MenuItem key={opt.id} value={opt.id}>
+                    <Checkbox checked={selectedCategoryIds.includes(opt.id)} />
+                    <ListItemText primary={opt.name} />
                   </MenuItem>
                 ))}
               </Select>
+              {selectedCategoryIds.length > 0 && selectedCategoryIds.length < 2 && (
+                <FormHelperText>Select at least 2 categories</FormHelperText>
+              )}
+              {selectedCategoryIds.length >= 2 && (
+                <Box mt={1} display="flex" gap={0.5} flexWrap="wrap">
+                  {selectedCategoryIds.map((id) => (
+                    <Chip
+                      key={id}
+                      size="small"
+                      label={categoryOptions.find((c) => c.id === id)?.name || id}
+                      onDelete={() => setSelectedCategoryIds((prev) => prev.filter((v) => v !== id))}
+                    />
+                  ))}
+                </Box>
+              )}
             </FormControl>
           </Box>
 

@@ -1,5 +1,10 @@
 import { apiFetch, uploadToSignedUrlWithProgress } from "./client";
 
+export type CategoryOption = {
+  id: string;
+  name: string;
+};
+
 export type MediaItem = {
   id: string;
   title: string;
@@ -7,6 +12,7 @@ export type MediaItem = {
   mediaType: "video" | "audio";
   menu: "LiveTv" | "Podcast";
   category?: string;
+  categories?: string[];
   tags?: string[];
   duration?: number;
   fileUrl: string;
@@ -54,8 +60,7 @@ export async function createMedia(payload: {
   description?: string;
   mediaType: "video" | "audio";
   menu: "LiveTv" | "Podcast";
-  category?: string;
-  tags?: string[];
+  categories: string[];  // min 2 Category ObjectId strings
   duration?: number;
   fileUrl: string;
   thumbnailUrl?: string;
@@ -71,7 +76,7 @@ export async function getMediaById(id: string) {
   return apiFetch<MediaItem>(`/media/${id}`);
 }
 
-export async function updateMedia(id: string, payload: Partial<Omit<MediaItem, "id" | "createdAt" | "updatedAt">>) {
+export async function updateMedia(id: string, payload: Partial<Omit<MediaItem, "id" | "createdAt" | "updatedAt">> & { categories?: string[] }) {
   return apiFetch<MediaItem>(`/media/${id}`, {
     method: "PUT",
     body: JSON.stringify(payload),
@@ -95,12 +100,14 @@ export async function updateMediaStatus(
   });
 }
 
-export async function getMediaCategories(): Promise<string[]> {
+export async function getMediaCategories(): Promise<CategoryOption[]> {
   const response = await apiFetch<{ data?: unknown[] } | unknown[]>('/media/categories', { auth: false });
   const raw = Array.isArray(response) ? response : (response as { data?: unknown[] })?.data || [];
-  return raw.map((item) =>
-    typeof item === 'string' ? item : (item as { name?: string }).name ?? String(item)
-  );
+  return raw
+    .filter((item): item is { id: string; name: string } =>
+      typeof item === 'object' && item !== null && 'id' in item && 'name' in item
+    )
+    .map((item) => ({ id: item.id, name: item.name }));
 }
 
 export async function requestUploadUrl(prefix: string, contentType: string) {
