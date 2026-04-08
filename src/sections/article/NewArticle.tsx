@@ -236,14 +236,21 @@ export default function NewArticleModal({ open, onClose, onSave, initialData }: 
                             sx={{ mb: 3 }}
                         />
 
-                        <TextField
-                            fullWidth
-                            label="Read Time"
-                            placeholder="5 min read"
-                            value={readTime}
-                            onChange={(e) => setReadTime(e.target.value)}
-                            sx={{ mb: 3 }}
-                        />
+                        <FormControl fullWidth sx={{ mb: 3 }}>
+                            <InputLabel>Read Time</InputLabel>
+                            <Select
+                                value={readTime}
+                                label="Read Time"
+                                onChange={(e) => setReadTime(e.target.value)}
+                            >
+                                <MenuItem value="5 mins">5 mins</MenuItem>
+                                <MenuItem value="10 mins">10 mins</MenuItem>
+                                <MenuItem value="15 mins">15 mins</MenuItem>
+                                <MenuItem value="30 mins">30 mins</MenuItem>
+                                <MenuItem value="45 mins">45 mins</MenuItem>
+                                <MenuItem value="1 hour">1 hour</MenuItem>
+                            </Select>
+                        </FormControl>
 
                         <FormControl fullWidth sx={{ mb: 3 }}>
                             <InputLabel>Status</InputLabel>

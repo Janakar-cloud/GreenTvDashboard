@@ -110,13 +110,6 @@ export default function ArticleDashboard() {
 
       {/* 🔍 FILTERS */}
       <Box display="flex" gap={2} mb={3}>
-        <TextField
-          fullWidth
-          placeholder="Search articles..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-
         <FormControl sx={{ minWidth: 180 }}>
           <InputLabel>Status</InputLabel>
           <Select
