@@ -35,11 +35,6 @@ export const navData = [
     icon: icon('ic-user'),
   },
   {
-    title: 'Live Config',
-    path: '/live-config',
-    icon: icon('ic-analytics'),
-  },
-  {
     title: 'Podcast Comments',
     path: '/podcast-comments',
     icon: icon('ic-blog'),
@@ -48,10 +43,5 @@ export const navData = [
     title: 'Users',
     path: '/user',
     icon: icon('ic-user'),
-  },
-  {
-    title: 'Test Email',
-    path: '/test-email',
-    icon: icon('ic-analytics'),
   },
 ];

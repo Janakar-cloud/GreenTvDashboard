@@ -66,7 +66,6 @@ export function OverviewAnalyticsView() {
   const metrics = summary?.metrics ?? {
     numberOfVideo: 0,
     totalUsers: 0,
-    onlineUsers: 0,
     totalPodcasts: 0,
     totalArticles: 0,
   };
@@ -121,20 +120,6 @@ export function OverviewAnalyticsView() {
             chart={{
               categories: ['Total'],
               series: [metrics.totalUsers],
-            }}
-          />
-        </Grid>
-
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <AnalyticsWidgetSummary
-            title="Online Users"
-            percent={0}
-            total={metrics.onlineUsers}
-            color="warning"
-            icon={<img alt="Online users" src="/assets/icons/glass/ic-glass-users.svg" />}
-            chart={{
-              categories: ['Online'],
-              series: [metrics.onlineUsers],
             }}
           />
         </Grid>
