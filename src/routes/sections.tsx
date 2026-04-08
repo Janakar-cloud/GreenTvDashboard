@@ -22,7 +22,6 @@ export const ProductsPage = lazy(() => import('src/pages/products'));
 export const Page404 = lazy(() => import('src/pages/page-not-found'));
 export const ManageMedia = lazy(() => import('src/pages/mange-media'));
 export const ArticlePage = lazy(() => import('src/pages/article'));
-export const UploadArticlePage = lazy(() => import('src/pages/upload-article'));
 export const LiveConfigPage = lazy(() => import('src/pages/live-config'));
 export const PodcastCommentsPage = lazy(() => import('src/pages/podcast-comments'));
 export const TestEmailPage = lazy(() => import('src/pages/test-email'));
@@ -66,7 +65,6 @@ export const routesSection: RouteObject[] = [
       { path: 'products', element: <ProductsPage /> },
       { path: 'manageMedia', element: < ManageMedia/> },
       { path: 'article', element: < ArticlePage/> },
-      { path: 'upload-article', element: <UploadArticlePage /> },
       { path: 'live-config', element: <LiveConfigPage /> },
       { path: 'podcast-comments', element: <PodcastCommentsPage /> },
       { path: 'test-email', element: <TestEmailPage /> },
