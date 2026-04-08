@@ -1,21 +1,16 @@
-import { $getRoot } from "lexical";
 import React, { useRef, useState } from "react";
-import { FORMAT_ELEMENT_COMMAND } from "lexical";
+import { $getRoot, $getSelection, $isRangeSelection, FORMAT_TEXT_COMMAND, FORMAT_ELEMENT_COMMAND } from "lexical";
 import { $patchStyleText } from "@lexical/selection";
 import { ListNode, ListItemNode } from "@lexical/list";
 import { $generateHtmlFromNodes } from "@lexical/html";
-import { $getSelection, $isRangeSelection } from "lexical";
 import { ListPlugin } from "@lexical/react/LexicalListPlugin";
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
 import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin";
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
-import { FORMAT_TEXT_COMMAND, UNDO_COMMAND, REDO_COMMAND, } from "lexical";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
-
-
 import CloseIcon from "@mui/icons-material/Close";
 import {
     Box,

@@ -2,10 +2,10 @@ import { it, vi, expect, describe, beforeEach } from 'vitest';
 
 import * as client from 'src/api/client';
 import {
-  getPodcastComments,
   addPodcastComment,
-  patchPodcastCommentStatus,
+  getPodcastComments,
   deletePodcastComment,
+  patchPodcastCommentStatus,
 } from 'src/api/podcasts';
 
 // ----------------------------------------------------------------------

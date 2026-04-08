@@ -76,7 +76,7 @@ export function getStoredUser(): UserProfile | null {
   try {
     const value = localStorage.getItem(USER_STORAGE_KEY);
     return value ? (JSON.parse(value) as UserProfile) : null;
-  } catch (error) {
+  } catch (_error) {
     return null;
   }
 }

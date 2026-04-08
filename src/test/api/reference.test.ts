@@ -2,11 +2,11 @@ import { it, vi, expect, describe, beforeEach } from 'vitest';
 
 import * as client from 'src/api/client';
 import {
-  getCategories,
-  getMenus,
   getTags,
+  getMenus,
   createTag,
   deleteTag,
+  getCategories,
 } from 'src/api/reference';
 
 // ----------------------------------------------------------------------

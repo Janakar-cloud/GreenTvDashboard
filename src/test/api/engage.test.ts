@@ -2,11 +2,11 @@ import { it, vi, expect, describe, beforeEach } from 'vitest';
 
 import * as client from 'src/api/client';
 import {
-  getEngageStats,
-  getTrending,
-  getLatest,
   getLogs,
+  getLatest,
   deleteLogs,
+  getTrending,
+  getEngageStats,
 } from 'src/api/engage';
 
 // ----------------------------------------------------------------------

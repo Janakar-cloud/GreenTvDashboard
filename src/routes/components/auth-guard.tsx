@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 
 import { Navigate, useLocation } from 'react-router-dom';
 
-import { getAccessToken, setTokens, clearTokens } from 'src/api/client';
+import { setTokens, clearTokens, getAccessToken } from 'src/api/client';
 
 function isTokenExpired(token: string): boolean {
   try {

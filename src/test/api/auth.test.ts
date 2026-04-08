@@ -1,7 +1,7 @@
 import { it, vi, expect, describe, beforeEach } from 'vitest';
 
 import * as client from 'src/api/client';
-import { login, register, logoutApi, getStoredUser, getMe } from 'src/api/auth';
+import { getMe, login, register, logoutApi, getStoredUser } from 'src/api/auth';
 
 // ----------------------------------------------------------------------
 

@@ -53,7 +53,7 @@ export function ProductItem({ product }: { product: ProductItemProps }) {
     />
   );
 
-  const renderPrice = (
+  const _renderPrice = (
     <Typography variant="subtitle1">
       <Typography
         component="span"

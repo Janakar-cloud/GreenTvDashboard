@@ -54,7 +54,7 @@ export function ProductFilters({
   onCloseFilter,
   onResetFilter,
 }: ProductFiltersProps) {
-  const renderGender = (
+  const _renderGender = (
     <Stack spacing={1}>
       <Typography variant="subtitle2">Gender</Typography>
       <FormGroup>
@@ -101,7 +101,7 @@ export function ProductFilters({
     </Stack>
   );
 
-  const renderColors = (
+  const _renderColors = (
     <Stack spacing={1}>
       <Typography variant="subtitle2">Colors</Typography>
       <ColorPicker
@@ -113,7 +113,7 @@ export function ProductFilters({
     </Stack>
   );
 
-  const renderPrice = (
+  const _renderPrice = (
     <Stack spacing={1}>
       <Typography variant="subtitle2">Price</Typography>
       <RadioGroup>

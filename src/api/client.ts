@@ -72,7 +72,7 @@ async function buildError(response: Response): Promise<ApiError> {
         message = maybeMessage;
       }
     }
-  } catch (err) {
+  } catch (_err) {
     // ignore JSON parse errors
   }
 
@@ -109,7 +109,7 @@ export async function refreshAccessToken(): Promise<string | null> {
       }
 
       return null;
-    } catch (error) {
+    } catch (_error) {
       clearTokens();
       return null;
     } finally {

@@ -1,4 +1,4 @@
-import type { ChangeEvent, DragEvent } from "react";
+import type { DragEvent, ChangeEvent } from "react";
 
 import React, { useRef, useState } from "react";
 
@@ -17,8 +17,8 @@ import {
   InputLabel,
   CardContent,
   FormControl,
-  FormControlLabel,
   LinearProgress,
+  FormControlLabel,
 } from "@mui/material";
 
 import { createArticle } from "src/api/articles";

@@ -36,8 +36,11 @@ export default defineConfig({
     host: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:4000',
+        // Override with BACKEND_URL env var when the API runs on a different host,
+        // e.g. BACKEND_URL=http://13.205.72.30:4000 npm run dev
+        target: process.env.BACKEND_URL || 'http://localhost:4000',
         changeOrigin: true,
+        secure: false,
       },
     },
   },

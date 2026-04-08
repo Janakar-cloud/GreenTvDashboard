@@ -2,8 +2,8 @@ import { it, vi, expect, describe, beforeEach } from 'vitest';
 
 import * as client from 'src/api/client';
 import {
-  getArticles,
   getArticle,
+  getArticles,
   createArticle,
   updateArticle,
   deleteArticle,
