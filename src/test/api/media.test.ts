@@ -57,6 +57,7 @@ describe('createMedia', () => {
       mediaType: 'video' as const,
       menu: 'LiveTv' as const,
       fileUrl: 'https://cdn.example.com/vid.mp4',
+      categories: ['cat-id-1', 'cat-id-2'],
     };
     const created = { id: 'media-1', ...payload, status: 'processing' as const };
     (client.apiFetch as ReturnType<typeof vi.spyOn>).mockResolvedValueOnce(created);
