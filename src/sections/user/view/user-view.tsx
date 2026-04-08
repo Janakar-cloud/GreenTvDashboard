@@ -62,6 +62,7 @@ export function UserView() {
         payload.map((item) => ({
           id: item.id,
           name: item.name,
+          email: item.email ?? '',
           role: item.role,
           status: item.status,
           avatarUrl: item.avatarUrl ?? '',
@@ -246,6 +247,7 @@ export function UserView() {
                   name: data.name,
                   role: data.role,
                   status: data.status,
+                  ...(data.password ? { password: data.password } : {}),
                 });
               } else {
                 await createUser({
