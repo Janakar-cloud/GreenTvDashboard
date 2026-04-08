@@ -10,13 +10,14 @@ import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
-import { $getRoot, $getSelection, $isRangeSelection, FORMAT_TEXT_COMMAND, FORMAT_ELEMENT_COMMAND } from "lexical";
+import { $getRoot, $isRangeSelection, $getSelection, FORMAT_TEXT_COMMAND, FORMAT_ELEMENT_COMMAND } from "lexical";
 
 import CloseIcon from "@mui/icons-material/Close";
 import {
     Box,
     Card,
     Chip,
+    Alert,
     Button,
     Dialog,
     Select,
@@ -29,9 +30,11 @@ import {
     FormControl,
     DialogTitle,
     DialogContent,
+    LinearProgress,
 } from "@mui/material";
 
-import { type ArticleItem, type ArticlePayload } from "src/api/articles";
+import { uploadToSignedUrlWithProgress } from "src/api/client";
+import { type ArticleItem, type ArticlePayload, requestArticleUpload } from "src/api/articles";
 
 type Props = {
     open: boolean;
@@ -45,17 +48,24 @@ export default function NewArticleModal({ open, onClose, onSave, initialData }: 
     const [subtitle, setSubtitle] = useState("");
     const [coverImage, setCoverImage] = useState("");
     const [bodyMd, setBodyMd] = useState("");
+    const [bodyHtml, setBodyHtml] = useState("");
     const [readTime, setReadTime] = useState("");
     const [publishDate, setPublishDate] = useState("");
     const [status, setStatus] = useState<'published' | 'draft'>('draft');
     const [tagInput, setTagInput] = useState("");
     const [tags, setTags] = useState<string[]>([]);
     const [image, setImage] = useState<string | null>(null);
+    const [coverFile, setCoverFile] = useState<File | null>(null);
+    const [uploading, setUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const [uploadError, setUploadError] = useState<string | null>(null);
 
     const fileRef = useRef<HTMLInputElement | null>(null);
 
     const handleImage = (file?: File) => {
         if (!file || !file.type.startsWith("image/")) return;
+        setCoverFile(file);
+        if (image) URL.revokeObjectURL(image);
         setImage(URL.createObjectURL(file));
     };
 
@@ -152,12 +162,17 @@ export default function NewArticleModal({ open, onClose, onSave, initialData }: 
         setSubtitle("");
         setCoverImage("");
         setBodyMd("");
+        setBodyHtml("");
         setReadTime("");
         setPublishDate("");
         setStatus('draft');
         setTags([]);
         setTagInput("");
         setImage(null);
+        setCoverFile(null);
+        setUploading(false);
+        setUploadProgress(0);
+        setUploadError(null);
     };
 
     React.useEffect(() => {
@@ -175,20 +190,56 @@ export default function NewArticleModal({ open, onClose, onSave, initialData }: 
         }
     }, [initialData, open]);
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         if (!title.trim()) return;
-        onSave({
-            title,
-            subtitle: subtitle || undefined,
-            coverImage: coverImage || undefined,
-            bodyMd: bodyMd || undefined,
-            readTime: readTime || undefined,
-            publishDate: publishDate || undefined,
-            status,
-            tags,
-        });
-        reset();
-        onClose();
+        setUploading(true);
+        setUploadError(null);
+        setUploadProgress(0);
+        try {
+            let finalCoverImage = coverImage;
+            let finalBodyHtml: string | undefined;
+
+            // 1. Upload cover image to S3 if a new file was selected
+            if (coverFile) {
+                const presign = await requestArticleUpload(
+                    `articles/covers`,
+                    coverFile.type,
+                );
+                await uploadToSignedUrlWithProgress(presign.url, coverFile, (pct) =>
+                    setUploadProgress(Math.round(pct * 0.5))
+                );
+                finalCoverImage = presign.fileUrl;
+            }
+
+            // 2. Upload HTML content to S3 if body has content
+            if (bodyHtml.trim() && bodyHtml !== '<p></p>') {
+                const htmlBlob = new Blob([bodyHtml], { type: 'text/html' });
+                const htmlFile = new File([htmlBlob], 'content.html', { type: 'text/html' });
+                const presign = await requestArticleUpload(`articles/content`, 'text/html');
+                await uploadToSignedUrlWithProgress(presign.url, htmlFile, (pct) =>
+                    setUploadProgress(50 + Math.round(pct * 0.5))
+                );
+                finalBodyHtml = presign.fileUrl;
+            }
+
+            onSave({
+                title,
+                subtitle: subtitle || undefined,
+                coverImage: finalCoverImage || undefined,
+                bodyMd: bodyMd || undefined,
+                bodyHtml: finalBodyHtml,
+                readTime: readTime || undefined,
+                publishDate: publishDate || undefined,
+                status,
+                tags,
+            });
+            reset();
+            onClose();
+        } catch (err) {
+            setUploadError(err instanceof Error ? err.message : 'Upload failed');
+        } finally {
+            setUploading(false);
+        }
     };
 
     return (
@@ -340,17 +391,10 @@ export default function NewArticleModal({ open, onClose, onSave, initialData }: 
                                     <OnChangePlugin
                                         onChange={(editorState, editor) => {
                                             editorState.read(() => {
-                                                // JSON
-                                                const json = editorState.toJSON();
-                                                console.log("JSON:", json);
-
-                                                // Plain Text
                                                 const text = $getRoot().getTextContent();
-                                                console.log("Text:", text);
-
-                                                // HTML
+                                                setBodyMd(text);
                                                 const html = $generateHtmlFromNodes(editor, null);
-                                                console.log("HTML:", html);
+                                                setBodyHtml(html);
                                             });
                                         }}
                                     />
@@ -386,15 +430,28 @@ export default function NewArticleModal({ open, onClose, onSave, initialData }: 
                             </Box>
                         </Box>
 
+                        {uploadError && (
+                            <Alert severity="error" sx={{ mb: 2 }}>{uploadError}</Alert>
+                        )}
+
+                        {uploading && (
+                            <Box sx={{ mb: 2 }}>
+                                <Typography variant="body2" color="text.secondary" mb={0.5}>
+                                    Uploading... {uploadProgress}%
+                                </Typography>
+                                <LinearProgress variant="determinate" value={uploadProgress} />
+                            </Box>
+                        )}
+
                         <Box display="flex" gap={2}>
                             <Button
                                 variant="contained"
                                 color="primary"
                                 fullWidth
                                 onClick={handleSubmit}
-                                disabled={!title.trim()}
+                                disabled={!title.trim() || uploading}
                             >
-                                {initialData ? "Update" : "Save"}
+                                {uploading ? `Uploading ${uploadProgress}%` : (initialData ? "Update" : "Save")}
                             </Button>
 
                             <Button

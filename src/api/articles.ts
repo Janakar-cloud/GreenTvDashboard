@@ -5,6 +5,7 @@ export type ArticleItem = {
   title: string;
   subtitle?: string;
   bodyMd?: string;
+  bodyHtml?: string;
   readTime?: string;
   coverImage?: string;
   publishDate?: string;
@@ -30,6 +31,19 @@ type ArticleQuery = {
   page?: number;
   pageSize?: number;
 };
+
+export type ArticlePresignResult = {
+  url: string;
+  fileUrl: string;
+  key: string;
+};
+
+export async function requestArticleUpload(prefix: string, contentType: string): Promise<ArticlePresignResult> {
+  return apiFetch<ArticlePresignResult>('/uploads/presign', {
+    method: 'POST',
+    body: JSON.stringify({ prefix, contentType }),
+  });
+}
 
 export async function getArticles(params: ArticleQuery = {}) {
   const query = new URLSearchParams(
