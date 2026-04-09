@@ -226,7 +226,19 @@ export function uploadToSignedUrlWithProgress(
     xhr.addEventListener("abort", () => reject(new Error("Upload cancelled")));
 
     xhr.open("PUT", url);
-    xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
+
+    // If the presigned URL was generated with checksum enforcement (AWS SDK v3 default),
+    // the checksum value is embedded in the URL query params and must also be sent as headers.
+    const parsedUrl = new URL(url);
+    const checksumCrc32 = parsedUrl.searchParams.get("x-amz-checksum-crc32");
+    const checksumAlgorithm = parsedUrl.searchParams.get("x-amz-sdk-checksum-algorithm");
+    if (checksumCrc32) {
+      xhr.setRequestHeader("x-amz-checksum-crc32", checksumCrc32);
+    }
+    if (checksumAlgorithm) {
+      xhr.setRequestHeader("x-amz-sdk-checksum-algorithm", checksumAlgorithm);
+    }
+
     xhr.send(file);
   });
 }
