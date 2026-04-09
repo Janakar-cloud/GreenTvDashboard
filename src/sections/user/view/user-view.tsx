@@ -245,6 +245,7 @@ export function UserView() {
               if (userDialog.user) {
                 await updateUser(userDialog.user.id, {
                   name: data.name,
+                  email: data.email,
                   role: data.role,
                   status: data.status,
                   ...(data.password ? { password: data.password } : {}),

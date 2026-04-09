@@ -24,7 +24,6 @@ import {
   FormHelperText,
 } from "@mui/material";
 
-import { getMenus } from "src/api/reference";
 import { type CategoryOption, createMedia, requestUploadUrl, getMediaCategories, uploadFileWithProgress } from "src/api/media";
 
 export function ProductsView() {
@@ -36,39 +35,20 @@ export function ProductsView() {
   const [thumbnail, setThumbnail] = useState<File | null>(null);
   const [thumbPreview, setThumbPreview] = useState<string | null>(null);
 
-  const [menu, setMenu] = useState<string>("");
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
 
   const [title, setTitle] = useState<string>("");
   const [description, setDescription] = useState<string>("");
 
-  const [menuOptions, setMenuOptions] = useState<string[]>(["LiveTv", "Podcast"]);
   const [categoryOptions, setCategoryOptions] = useState<CategoryOption[]>([]);
+
+  const fileRef = useRef<HTMLInputElement | null>(null);
+  const thumbRef = useRef<HTMLInputElement | null>(null);
 
   const [progress, setProgress] = useState<number>(0);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-
-  const fileRef = useRef<HTMLInputElement | null>(null);
-  const thumbRef = useRef<HTMLInputElement | null>(null);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const menusResponse = await getMenus();
-        const menusList = Array.isArray(menusResponse) ? menusResponse : [];
-        if (menusList.length) {
-          setMenuOptions(menusList);
-        }
-
-        const categoryList = await getMediaCategories();
-        setCategoryOptions(categoryList);
-      } catch (err) {
-        console.warn("Unable to load reference data", err);
-      }
-    })();
-  }, []);
 
   // 🎯 Handle Media
   const handleMedia = (selectedFile?: File | null) => {
@@ -132,31 +112,28 @@ export function ProductsView() {
     handleMedia(e.dataTransfer.files[0]);
   };
 
+  useEffect(() => {
+    (async () => {
+      try {
+        const categoryList = await getMediaCategories();
+        setCategoryOptions(categoryList);
+      } catch (err) {
+        console.warn("Unable to load reference data", err);
+      }
+    })();
+  }, []);
+
   const resetForm = () => {
     setFile(null);
     setPreview(null);
     setThumbnail(null);
     setThumbPreview(null);
-    setMenu("");
     setSelectedCategoryIds([]);
     setTitle("");
     setDescription("");
     setProgress(0);
     setError(null);
   };
-
-  const handleUpload = async () => {
-    if (!file) {
-      setError("Please select a media file to upload.");
-      return;
-    }
-
-    if (!menu) {
-      setError("Please choose a menu (LiveTv or Podcast).");
-      return;
-    }
-
-    if (selectedCategoryIds.length < 2) {
       setError("Please select at least 2 categories.");
       return;
     }
@@ -187,16 +164,13 @@ export function ProductsView() {
         thumbnailUrl = thumbRemote;
       }
 
-      await createMedia({
-        title,
-        description: description || undefined,
-        mediaType,
-        menu: menu as "LiveTv" | "Podcast",
-        categories: selectedCategoryIds,
-        fileUrl,
-        thumbnailUrl,
-        status: "ready",
-      });
+  const handleUpload = async () => {
+    if (!file) {
+      setError("Please select a media file to upload.");
+      return;
+    }
+
+    if (selectedCategoryIds.length < 2) {
 
       setSuccess("Upload completed");
       resetForm();
@@ -393,25 +367,16 @@ export function ProductsView() {
             </Box>
           )}
 
-          {/* MENU */}
-          <Box mt={3}>
-            <FormControl fullWidth>
-              <InputLabel>Menu</InputLabel>
-              <Select
-                value={menu}
-                label="Menu"
-                onChange={(e) => setMenu(e.target.value)}
-                disabled={uploading}
-              >
-                <MenuItem value="">Select Menu</MenuItem>
-                {menuOptions.map((opt) => (
-                  <MenuItem key={opt} value={opt}>
-                    {opt}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Box>
+      await createMedia({
+        title,
+        description: description || undefined,
+        mediaType,
+        menu: mediaType === "video" ? "LiveTv" : "Podcast",
+        categories: selectedCategoryIds,
+        fileUrl,
+        thumbnailUrl,
+        status: "ready",
+      });
 
           {/* CATEGORY — multi-select, min 2 */}
           <Box mt={3}>

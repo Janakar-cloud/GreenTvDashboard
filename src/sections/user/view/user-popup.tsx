@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 
 import CloseIcon from "@mui/icons-material/Close";
+import Visibility from "@mui/icons-material/Visibility";
+import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import {
   Box,
   Modal,
@@ -10,6 +12,7 @@ import {
   TextField,
   Typography,
   IconButton,
+  InputAdornment,
 } from "@mui/material";
 
 type UserPopupProps = {
@@ -38,6 +41,7 @@ const UserPopup: React.FC<UserPopupProps> = ({ open, onClose, onSave, initialDat
     status: "active",
     password: "",
   });
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (key: string, value: string) => {
     setForm({ ...form, [key]: value });
@@ -123,10 +127,21 @@ const UserPopup: React.FC<UserPopupProps> = ({ open, onClose, onSave, initialDat
               <Typography>Password {initialData ? "(leave blank to keep)" : "*"}</Typography>
               <TextField
                 fullWidth
-                type="password"
+                type={showPassword ? "text" : "password"}
                 placeholder="Enter password"
                 value={form.password}
                 onChange={(e) => handleChange("password", e.target.value)}
+                slotProps={{
+                  input: {
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton onClick={() => setShowPassword((v) => !v)} edge="end">
+                          {showPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  },
+                }}
               />
             </Box>
           </Box>
