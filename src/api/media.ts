@@ -127,8 +127,8 @@ export async function uploadFileWithProgress(
 
 // ─── Multipart upload (for files > MULTIPART_THRESHOLD) ──────────────────────
 
-const MULTIPART_THRESHOLD = 10 * 1024 * 1024;  // 10 MiB — switch to multipart above this
-const PART_SIZE = 10 * 1024 * 1024;             // 10 MiB per part
+const MULTIPART_THRESHOLD = 300 * 1024 * 1024; // 300 MiB — use single PUT below this
+const PART_SIZE = 300 * 1024 * 1024;            // 300 MiB per part
 
 async function startMultipartUpload(prefix: string) {
   return apiFetch<{ uploadId: string; key: string; fileUrl: string }>(
@@ -179,8 +179,8 @@ export async function uploadMediaFile(
     return fileUrl;
   }
 
-  // Large file — S3 multipart upload (parallel, 3 parts at a time)
-  const PARALLEL = 3;
+  // Large file — S3 multipart upload (parallel, 2 parts at a time)
+  const PARALLEL = 2;
   const { uploadId, key, fileUrl } = await startMultipartUpload(prefix);
   const totalParts = Math.ceil(file.size / PART_SIZE);
   const parts: { PartNumber: number; ETag: string }[] = new Array(totalParts);
