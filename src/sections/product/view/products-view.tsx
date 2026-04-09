@@ -134,6 +134,14 @@ export function ProductsView() {
     setProgress(0);
     setError(null);
   };
+
+  const handleUpload = async () => {
+    if (!file) {
+      setError("Please select a media file to upload.");
+      return;
+    }
+
+    if (selectedCategoryIds.length < 2) {
       setError("Please select at least 2 categories.");
       return;
     }
@@ -164,13 +172,16 @@ export function ProductsView() {
         thumbnailUrl = thumbRemote;
       }
 
-  const handleUpload = async () => {
-    if (!file) {
-      setError("Please select a media file to upload.");
-      return;
-    }
-
-    if (selectedCategoryIds.length < 2) {
+      await createMedia({
+        title,
+        description: description || undefined,
+        mediaType,
+        menu: mediaType === "video" ? "LiveTv" : "Podcast",
+        categories: selectedCategoryIds,
+        fileUrl,
+        thumbnailUrl,
+        status: "ready",
+      });
 
       setSuccess("Upload completed");
       resetForm();
@@ -366,17 +377,6 @@ export function ProductsView() {
               </Box>
             </Box>
           )}
-
-      await createMedia({
-        title,
-        description: description || undefined,
-        mediaType,
-        menu: mediaType === "video" ? "LiveTv" : "Podcast",
-        categories: selectedCategoryIds,
-        fileUrl,
-        thumbnailUrl,
-        status: "ready",
-      });
 
           {/* CATEGORY — multi-select, min 2 */}
           <Box mt={3}>
