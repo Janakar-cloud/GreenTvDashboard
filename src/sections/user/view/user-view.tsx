@@ -236,7 +236,14 @@ export function UserView() {
       {userDialog.open ? (
         <UserPopup
           open={userDialog.open}
-          initialData={userDialog.user || undefined}
+          initialData={userDialog.user ? {
+            id: userDialog.user.id,
+            name: userDialog.user.name,
+            email: userDialog.user.email,
+            role: userDialog.user.role,
+            status: userDialog.user.status,
+            isVerified: userDialog.user.isVerified,
+          } : undefined}
           onClose={() => setUserDialog({ open: false, user: null })}
           onSave={async (data) => {
             setSubmitting(true);

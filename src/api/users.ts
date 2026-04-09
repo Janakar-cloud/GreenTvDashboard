@@ -74,3 +74,9 @@ export async function deleteUser(id: string) {
     method: 'DELETE',
   });
 }
+
+export async function sendVerificationEmail(id: string) {
+  return apiFetch<{ message: string }>(`/users/${id}/send-verification`, {
+    method: 'POST',
+  });
+}

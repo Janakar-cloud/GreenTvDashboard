@@ -3,17 +3,22 @@ import React, { useState } from "react";
 import CloseIcon from "@mui/icons-material/Close";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
+import MarkEmailReadIcon from "@mui/icons-material/MarkEmailRead";
 import {
   Box,
+  Alert,
   Modal,
   Button,
   Divider,
   MenuItem,
+  Snackbar,
   TextField,
   Typography,
   IconButton,
   InputAdornment,
 } from "@mui/material";
+
+import { sendVerificationEmail } from "src/api/users";
 
 type UserPopupProps = {
   open: boolean;
@@ -26,10 +31,12 @@ type UserPopupProps = {
     password?: string;
   }) => void;
   initialData?: {
+    id?: string;
     name?: string;
     email?: string;
     role?: string;
     status?: string;
+    isVerified?: boolean;
   };
 };
 
@@ -42,6 +49,8 @@ const UserPopup: React.FC<UserPopupProps> = ({ open, onClose, onSave, initialDat
     password: "",
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [sendingVerification, setSendingVerification] = useState(false);
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: "success" | "error" }>({ open: false, message: "", severity: "success" });
 
   const handleChange = (key: string, value: string) => {
     setForm({ ...form, [key]: value });
@@ -56,6 +65,23 @@ const UserPopup: React.FC<UserPopupProps> = ({ open, onClose, onSave, initialDat
       password: "",
     });
   }, [initialData]);
+
+  const isEditMode = Boolean(initialData?.id);
+  const isVerified = Boolean(initialData?.isVerified);
+
+  const handleSendVerification = async () => {
+    if (!initialData?.id) return;
+    setSendingVerification(true);
+    try {
+      await sendVerificationEmail(initialData.id);
+      setSnackbar({ open: true, message: "Verification email sent successfully!", severity: "success" });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to send verification email";
+      setSnackbar({ open: true, message: msg, severity: "error" });
+    } finally {
+      setSendingVerification(false);
+    }
+  };
 
   const handleSave = () => {
     onSave(form);
@@ -192,10 +218,36 @@ const UserPopup: React.FC<UserPopupProps> = ({ open, onClose, onSave, initialDat
           <Button variant="outlined" onClick={onClose}>
             Cancel
           </Button>
+          {isEditMode && !isVerified && (
+            <Button
+              variant="outlined"
+              color="primary"
+              startIcon={<MarkEmailReadIcon />}
+              onClick={handleSendVerification}
+              disabled={sendingVerification}
+            >
+              {sendingVerification ? "Sending..." : "Send Verification Email"}
+            </Button>
+          )}
           <Button variant="contained" onClick={handleSave}>
             Save
           </Button>
         </Box>
+
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={4000}
+          onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+          anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        >
+          <Alert
+            severity={snackbar.severity}
+            onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+            sx={{ width: "100%" }}
+          >
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
       </Box>
     </Modal>
   );
