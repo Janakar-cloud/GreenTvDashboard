@@ -243,4 +243,40 @@ export function uploadToSignedUrlWithProgress(
   });
 }
 
+/**
+ * Upload a single multipart part to a presigned UploadPart URL.
+ * Returns the ETag from the S3 response — required for CompleteMultipartUpload.
+ */
+export function uploadPartWithProgress(
+  url: string,
+  chunk: Blob,
+  onProgress?: (percent: number) => void
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+
+    xhr.upload.addEventListener("progress", (event) => {
+      if (event.lengthComputable && onProgress) {
+        const percent = Math.round((event.loaded / event.total) * 100);
+        onProgress(percent);
+      }
+    });
+
+    xhr.addEventListener("load", () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        const etag = xhr.getResponseHeader("ETag") || xhr.getResponseHeader("etag") || "";
+        resolve(etag);
+      } else {
+        reject(new Error(`Part upload failed: ${xhr.statusText || xhr.status}`));
+      }
+    });
+
+    xhr.addEventListener("error", () => reject(new Error("Part upload failed")));
+    xhr.addEventListener("abort", () => reject(new Error("Part upload cancelled")));
+
+    xhr.open("PUT", url);
+    xhr.send(chunk);
+  });
+}
+
 export { API_BASE_URL };

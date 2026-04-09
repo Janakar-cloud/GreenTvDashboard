@@ -24,7 +24,7 @@ import {
   FormHelperText,
 } from "@mui/material";
 
-import { type CategoryOption, createMedia, requestUploadUrl, getMediaCategories, uploadFileWithProgress } from "src/api/media";
+import { type CategoryOption, createMedia, getMediaCategories, uploadMediaFile } from "src/api/media";
 
 export function ProductsView() {
   const [mediaType, setMediaType] = useState<"video" | "audio">("video");
@@ -158,18 +158,12 @@ export function ProductsView() {
 
     try {
       const mediaPrefix = mediaType === "video" ? "videos" : "podcasts";
-      const { url: mediaUrl, fileUrl } = await requestUploadUrl(mediaPrefix, file.type);
-      await uploadFileWithProgress(mediaUrl, file, setProgress);
+      const fileUrl = await uploadMediaFile(mediaPrefix, file, setProgress);
 
       let thumbnailUrl: string | undefined;
 
       if (mediaType === "video" && thumbnail) {
-        const { url: thumbUrl, fileUrl: thumbRemote } = await requestUploadUrl(
-          "thumbnails",
-          thumbnail.type
-        );
-        await uploadFileWithProgress(thumbUrl, thumbnail);
-        thumbnailUrl = thumbRemote;
+        thumbnailUrl = await uploadMediaFile("thumbnails", thumbnail);
       }
 
       await createMedia({

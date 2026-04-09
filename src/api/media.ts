@@ -1,4 +1,4 @@
-import { apiFetch, uploadToSignedUrlWithProgress } from "./client";
+import { apiFetch, uploadToSignedUrlWithProgress, uploadPartWithProgress } from "./client";
 
 export type CategoryOption = {
   id: string;
@@ -123,4 +123,105 @@ export async function uploadFileWithProgress(
   onProgress?: (percent: number) => void
 ) {
   await uploadToSignedUrlWithProgress(signedUrl, file, onProgress);
+}
+
+// ─── Multipart upload (for files > MULTIPART_THRESHOLD) ──────────────────────
+
+const MULTIPART_THRESHOLD = 10 * 1024 * 1024;  // 10 MiB — switch to multipart above this
+const PART_SIZE = 10 * 1024 * 1024;             // 10 MiB per part
+
+async function startMultipartUpload(prefix: string) {
+  return apiFetch<{ uploadId: string; key: string; fileUrl: string }>(
+    "/uploads/presign/multipart/start",
+    { method: "POST", body: JSON.stringify({ prefix }) }
+  );
+}
+
+async function getPartUploadUrl(key: string, uploadId: string, partNumber: number) {
+  return apiFetch<{ url: string }>(
+    "/uploads/presign/multipart/part",
+    { method: "POST", body: JSON.stringify({ key, uploadId, partNumber }) }
+  );
+}
+
+async function finishMultipartUpload(
+  key: string,
+  uploadId: string,
+  parts: { PartNumber: number; ETag: string }[]
+) {
+  return apiFetch<{ ok: boolean }>(
+    "/uploads/presign/multipart/complete",
+    { method: "POST", body: JSON.stringify({ key, uploadId, parts }) }
+  );
+}
+
+async function cancelMultipartUpload(key: string, uploadId: string) {
+  return apiFetch<{ ok: boolean }>(
+    "/uploads/presign/multipart/abort",
+    { method: "POST", body: JSON.stringify({ key, uploadId }) }
+  );
+}
+
+/**
+ * Upload a file to S3, automatically switching to multipart for files > 100 MiB.
+ * Parts are 50 MiB each; overall progress (0–100) is reported via onProgress.
+ * Returns the permanent public fileUrl to store in the database.
+ */
+export async function uploadMediaFile(
+  prefix: string,
+  file: File,
+  onProgress?: (percent: number) => void
+): Promise<string> {
+  if (file.size <= MULTIPART_THRESHOLD) {
+    // Small file — use a single presigned PUT
+    const { url, fileUrl } = await requestUploadUrl(prefix, file.type);
+    await uploadFileWithProgress(url, file, onProgress);
+    return fileUrl;
+  }
+
+  // Large file — S3 multipart upload (parallel, 3 parts at a time)
+  const PARALLEL = 3;
+  const { uploadId, key, fileUrl } = await startMultipartUpload(prefix);
+  const totalParts = Math.ceil(file.size / PART_SIZE);
+  const parts: { PartNumber: number; ETag: string }[] = new Array(totalParts);
+  const uploadedPerPart = new Array(totalParts).fill(0);
+
+  const uploadPart = async (i: number) => {
+    const start = i * PART_SIZE;
+    const end = Math.min(start + PART_SIZE, file.size);
+    const chunk = file.slice(start, end);
+    const chunkSize = end - start;
+    const partNumber = i + 1;
+
+    const { url } = await getPartUploadUrl(key, uploadId, partNumber);
+    const etag = await uploadPartWithProgress(url, chunk, (partPercent) => {
+      uploadedPerPart[i] = (partPercent / 100) * chunkSize;
+      if (onProgress) {
+        const totalUploaded = uploadedPerPart.reduce((a, b) => a + b, 0);
+        const overall = Math.round((totalUploaded / file.size) * 100);
+        onProgress(Math.min(overall, 99));
+      }
+    });
+
+    parts[i] = { PartNumber: partNumber, ETag: etag };
+  };
+
+  try {
+    // Process all parts in batches of PARALLEL
+    for (let i = 0; i < totalParts; i += PARALLEL) {
+      const batch = Array.from(
+        { length: Math.min(PARALLEL, totalParts - i) },
+        (_, j) => uploadPart(i + j)
+      );
+      await Promise.all(batch);
+    }
+
+    await finishMultipartUpload(key, uploadId, parts);
+    onProgress?.(100);
+    return fileUrl;
+  } catch (err) {
+    // Best-effort abort to avoid S3 partial-upload storage charges
+    cancelMultipartUpload(key, uploadId).catch(() => {});
+    throw err;
+  }
 }
