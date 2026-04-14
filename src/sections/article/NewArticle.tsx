@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { $patchStyleText } from "@lexical/selection";
 import { $generateHtmlFromNodes } from "@lexical/html";
 import { ListNode, ListItemNode } from "@lexical/list";
@@ -10,7 +10,7 @@ import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
-import { $getRoot, $isRangeSelection, $getSelection, FORMAT_TEXT_COMMAND, FORMAT_ELEMENT_COMMAND } from "lexical";
+import { $getRoot, $isRangeSelection, $getSelection, FORMAT_TEXT_COMMAND, FORMAT_ELEMENT_COMMAND, $insertNodes } from "lexical";
 
 import CloseIcon from "@mui/icons-material/Close";
 import {
@@ -58,6 +58,9 @@ export default function NewArticleModal({ open, onClose, onSave, initialData }: 
     const [uploading, setUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
     const [uploadError, setUploadError] = useState<string | null>(null);
+    // Raw HTML to pre-load into the Lexical editor (fetched from S3 if bodyHtml is a URL)
+    const [initialHtml, setInitialHtml] = useState<string>("");
+    const [editorKey, setEditorKey] = useState(0);
 
     const fileRef = useRef<HTMLInputElement | null>(null);
 
@@ -68,6 +71,26 @@ export default function NewArticleModal({ open, onClose, onSave, initialData }: 
         setImage(URL.createObjectURL(file));
     };
 
+
+    // 🔹 Plugin: inject HTML content into Lexical on mount
+    function InitialContentPlugin({ html }: { html: string }) {
+        const [editor] = useLexicalComposerContext();
+        const injected = useRef(false);
+        useEffect(() => {
+            if (!html || injected.current) return;
+            injected.current = true;
+            editor.update(() => {
+                const parser = new DOMParser();
+                const dom = parser.parseFromString(html, 'text/html');
+                const nodes = $generateNodesFromDOM(editor, dom);
+                const root = $getRoot();
+                root.clear();
+                root.select();
+                $insertNodes(nodes);
+            });
+        }, [editor, html]);
+        return null;
+    }
 
     // 🔹 Toolbar Component
     function Toolbar() {
@@ -181,13 +204,25 @@ export default function NewArticleModal({ open, onClose, onSave, initialData }: 
             setBodyMd(initialData.bodyMd || "");
             setReadTime(initialData.readTime || "");
             setStatus(initialData.status || 'draft');
-            // Tags may be populated objects from the API — normalise to plain name strings
             setTags(
                 (initialData.tags || []).map((t) =>
                     typeof t === 'string' ? t : (t as any).name ?? ''
                 ).filter(Boolean)
             );
+            // Load body HTML into the editor: fetch from S3 if it's a URL, else use raw
+            const bh = initialData.bodyHtml || '';
+            if (bh.startsWith('http://') || bh.startsWith('https://')) {
+                fetch(bh)
+                    .then(r => r.text())
+                    .then(html => { setInitialHtml(html); setEditorKey(k => k + 1); })
+                    .catch(() => { setInitialHtml(''); setEditorKey(k => k + 1); });
+            } else {
+                setInitialHtml(bh);
+                setEditorKey(k => k + 1);
+            }
         } else if (open) {
+            setInitialHtml('');
+            setEditorKey(k => k + 1);
             reset();
         }
     }, [initialData, open]);
@@ -345,7 +380,7 @@ export default function NewArticleModal({ open, onClose, onSave, initialData }: 
                             sx={{ mb: 3 }}
                         /> */}
 
-                        <LexicalComposer initialConfig={editorConfig}>
+                        <LexicalComposer key={editorKey} initialConfig={editorConfig}>
                             <div style={{ border: "1px solid #ccc", borderRadius: "8px", marginBottom: "3%" }}>
 
                                 {/*Toolbar */}
@@ -392,6 +427,7 @@ export default function NewArticleModal({ open, onClose, onSave, initialData }: 
                                             });
                                         }}
                                     />
+                                    <InitialContentPlugin html={initialHtml} />
                                 </div>
 
                             </div>

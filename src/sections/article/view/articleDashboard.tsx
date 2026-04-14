@@ -51,7 +51,9 @@ export default function ArticleDashboard() {
     setError(null);
     try {
       const response = await getArticles({ status: (status as string) || 'all', search: search || undefined });
-      const items = Array.isArray(response) ? response : response.items || [];
+      const raw = Array.isArray(response) ? response : response.items || [];
+      // Backend returns _id; normalise to id so all actions (delete/edit/patch) work
+      const items = raw.map((a: any) => ({ ...a, id: a.id || a._id }));
       setArticles(items);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unable to load articles";
