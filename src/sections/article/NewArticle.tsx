@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from "react";
 import { $patchStyleText } from "@lexical/selection";
-import { $generateHtmlFromNodes } from "@lexical/html";
+import { $generateHtmlFromNodes, $generateNodesFromDOM } from "@lexical/html";
 import { ListNode, ListItemNode } from "@lexical/list";
 import { ListPlugin } from "@lexical/react/LexicalListPlugin";
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
