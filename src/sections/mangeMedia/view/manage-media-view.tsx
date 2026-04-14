@@ -100,6 +100,7 @@ export default function ManageVideos() {
   }, [fetchMedia]);
 
   const handleDelete = async (id: string) => {
+    if (!id || id === 'undefined') { console.error('Delete called with invalid id'); return; }
     if (!window.confirm("Delete this media item?")) return;
     setDeletingId(id);
     try {
