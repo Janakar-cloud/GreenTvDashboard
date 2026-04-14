@@ -50,7 +50,6 @@ export default function NewArticleModal({ open, onClose, onSave, initialData }: 
     const [bodyMd, setBodyMd] = useState("");
     const [bodyHtml, setBodyHtml] = useState("");
     const [readTime, setReadTime] = useState("");
-    const [publishDate, setPublishDate] = useState("");
     const [status, setStatus] = useState<'published' | 'draft'>('draft');
     const [tagInput, setTagInput] = useState("");
     const [tags, setTags] = useState<string[]>([]);
@@ -164,7 +163,6 @@ export default function NewArticleModal({ open, onClose, onSave, initialData }: 
         setBodyMd("");
         setBodyHtml("");
         setReadTime("");
-        setPublishDate("");
         setStatus('draft');
         setTags([]);
         setTagInput("");
@@ -182,9 +180,13 @@ export default function NewArticleModal({ open, onClose, onSave, initialData }: 
             setCoverImage(initialData.coverImage || "");
             setBodyMd(initialData.bodyMd || "");
             setReadTime(initialData.readTime || "");
-            setPublishDate(initialData.publishDate || "");
             setStatus(initialData.status || 'draft');
-            setTags(initialData.tags || []);
+            // Tags may be populated objects from the API — normalise to plain name strings
+            setTags(
+                (initialData.tags || []).map((t) =>
+                    typeof t === 'string' ? t : (t as any).name ?? ''
+                ).filter(Boolean)
+            );
         } else if (open) {
             reset();
         }
@@ -198,6 +200,7 @@ export default function NewArticleModal({ open, onClose, onSave, initialData }: 
         try {
             let finalCoverImage = coverImage;
             let finalBodyHtml: string | undefined;
+            const publishDate = new Date().toISOString();
 
             // 1. Upload cover image to S3 if a new file was selected
             if (coverFile) {
@@ -267,15 +270,6 @@ export default function NewArticleModal({ open, onClose, onSave, initialData }: 
                             label="Subtitle"
                             value={subtitle}
                             onChange={(e) => setSubtitle(e.target.value)}
-                            sx={{ mb: 3 }}
-                        />
-
-                        <TextField
-                            fullWidth
-                            label="Publish Date (ISO)"
-                            placeholder="2026-03-26T10:00:00.000Z"
-                            value={publishDate}
-                            onChange={(e) => setPublishDate(e.target.value)}
                             sx={{ mb: 3 }}
                         />
 

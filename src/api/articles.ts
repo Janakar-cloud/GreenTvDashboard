@@ -1,5 +1,7 @@
 import { apiFetch } from './client';
 
+export type PopulatedTag = { _id: string; name: string; kind?: string };
+
 export type ArticleItem = {
   id: string;
   title: string;
@@ -11,10 +13,11 @@ export type ArticleItem = {
   publishDate?: string;
   status?: 'published' | 'draft';
   featured?: boolean;
-  tags?: string[];
+  // Backend returns populated tag objects; payload sends plain name strings
+  tags?: (string | PopulatedTag)[];
 };
 
-export type ArticlePayload = Omit<ArticleItem, 'id'>;
+export type ArticlePayload = Omit<ArticleItem, 'id' | 'tags'> & { tags?: string[] };
 
 export type ArticleListResponse = {
   items: ArticleItem[];

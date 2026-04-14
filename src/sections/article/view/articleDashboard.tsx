@@ -50,7 +50,7 @@ export default function ArticleDashboard() {
     setLoading(true);
     setError(null);
     try {
-      const response = await getArticles({ status: status || undefined, search: search || undefined });
+      const response = await getArticles({ status: (status as string) || 'all', search: search || undefined });
       const items = Array.isArray(response) ? response : response.items || [];
       setArticles(items);
     } catch (err) {
@@ -174,9 +174,11 @@ export default function ArticleDashboard() {
 
                 <TableCell>
                   <Box display="flex" gap={1} flexWrap="wrap">
-                    {article.tags?.map((t) => (
-                      <Chip key={t} label={t} size="small" />
-                    ))}
+                    {article.tags?.map((t, i) => {
+                      const label = typeof t === 'string' ? t : t.name;
+                      const key = typeof t === 'string' ? t : t._id ?? i;
+                      return <Chip key={String(key)} label={label} size="small" />;
+                    })}
                   </Box>
                 </TableCell>
 
