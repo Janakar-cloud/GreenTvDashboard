@@ -1,7 +1,6 @@
-import React, { useRef, useState, useEffect } from "react";
 import { $patchStyleText } from "@lexical/selection";
-import { $generateHtmlFromNodes, $generateNodesFromDOM } from "@lexical/html";
 import { ListNode, ListItemNode } from "@lexical/list";
+import React, { useRef, useState, useEffect } from "react";
 import { ListPlugin } from "@lexical/react/LexicalListPlugin";
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
@@ -9,8 +8,9 @@ import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin";
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
+import { $generateNodesFromDOM, $generateHtmlFromNodes } from "@lexical/html";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
-import { $getRoot, $isRangeSelection, $getSelection, FORMAT_TEXT_COMMAND, FORMAT_ELEMENT_COMMAND, $insertNodes } from "lexical";
+import { $getRoot, $insertNodes, $getSelection, $isRangeSelection, FORMAT_TEXT_COMMAND, FORMAT_ELEMENT_COMMAND } from "lexical";
 
 import CloseIcon from "@mui/icons-material/Close";
 import {
