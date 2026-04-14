@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -29,7 +29,7 @@ import {
   CircularProgress,
 } from "@mui/material";
 
-import { type CategoryOption, getMedia, updateMedia, deleteMedia, type MediaItem, getMediaCategories } from "src/api/media";
+import { type CategoryOption, getMedia, updateMedia, deleteMedia, type MediaItem, getMediaCategories, requestUploadUrl, uploadFileWithProgress } from "src/api/media";
 
 function extractList(response: MediaItem[] | { data?: MediaItem[] }) {
   if (Array.isArray(response)) return response;
@@ -63,6 +63,9 @@ export default function ManageVideos() {
   const [editCategoryIds, setEditCategoryIds] = useState<string[]>([]);
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
+  const [editThumbnailUrl, setEditThumbnailUrl] = useState("");
+  const [thumbUploadProgress, setThumbUploadProgress] = useState<number | null>(null);
+  const thumbInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     (async () => {
@@ -123,14 +126,31 @@ export default function ManageVideos() {
     setEditTitle(item.title);
     setEditDescription(item.description ?? "");
     setEditCategoryIds(ids);
+    setEditThumbnailUrl(item.thumbnailUrl ?? "");
+    setThumbUploadProgress(null);
     setEditError(null);
     setEditDialog({ open: true, item });
   };
 
+  const handleThumbFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setThumbUploadProgress(0);
+      const { url, fileUrl } = await requestUploadUrl("thumbnails", file.type);
+      await uploadFileWithProgress(url, file, setThumbUploadProgress);
+      setEditThumbnailUrl(fileUrl);
+      setThumbUploadProgress(null);
+    } catch (err) {
+      setEditError("Thumbnail upload failed");
+      setThumbUploadProgress(null);
+    }
+  };
+
   const handleEditSave = async () => {
     if (!editDialog.item) return;
-    if (editCategoryIds.length < 2) {
-      setEditError("Select at least 2 categories");
+    if (editCategoryIds.length > 0 && editCategoryIds.length < 2) {
+      setEditError("Select at least 2 categories (or clear all)");
       return;
     }
     setEditSaving(true);
@@ -139,7 +159,8 @@ export default function ManageVideos() {
       await updateMedia(editDialog.item.id, {
         title: editTitle,
         description: editDescription || undefined,
-        categories: editCategoryIds,
+        categories: editCategoryIds.length >= 2 ? editCategoryIds : undefined,
+        ...(editThumbnailUrl ? { thumbnailUrl: editThumbnailUrl } : {}),
       });
       setEditDialog({ open: false, item: null });
       fetchMedia();
@@ -320,6 +341,31 @@ export default function ManageVideos() {
             disabled={editSaving}
           />
 
+          {/* Thumbnail upload */}
+          <Box>
+            <Typography variant="body2" color="text.secondary" mb={1}>Thumbnail Image</Typography>
+            {editThumbnailUrl && (
+              <Box mb={1}>
+                <img src={editThumbnailUrl} alt="thumbnail preview" style={{ width: "100%", maxHeight: 160, objectFit: "cover", borderRadius: 8 }} />
+              </Box>
+            )}
+            <input
+              ref={thumbInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              style={{ display: "none" }}
+              onChange={handleThumbFileChange}
+            />
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => thumbInputRef.current?.click()}
+              disabled={editSaving || thumbUploadProgress !== null}
+            >
+              {thumbUploadProgress !== null ? `Uploading ${thumbUploadProgress}%` : editThumbnailUrl ? "Change Thumbnail" : "Upload Thumbnail"}
+            </Button>
+          </Box>
+
           {/* Multi-select categories */}
           <FormControl fullWidth error={editCategoryIds.length > 0 && editCategoryIds.length < 2}>
             <InputLabel>Categories (select at least 2)</InputLabel>
@@ -368,7 +414,7 @@ export default function ManageVideos() {
           <Button onClick={() => setEditDialog({ open: false, item: null })} disabled={editSaving}>
             Cancel
           </Button>
-          <Button variant="contained" onClick={handleEditSave} disabled={editSaving || editCategoryIds.length < 2}>
+          <Button variant="contained" onClick={handleEditSave} disabled={editSaving || thumbUploadProgress !== null}>
             {editSaving ? <CircularProgress size={18} /> : "Save"}
           </Button>
         </DialogActions>
