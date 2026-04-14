@@ -17,7 +17,7 @@ export type MediaItem = {
   duration?: number;
   fileUrl: string;
   thumbnailUrl?: string;
-  status: "processing" | "ready" | "failed";
+  status: "processing" | "ready" | "failed" | "published";
   views?: number;
   likes?: number;
   commentsCount?: number;
@@ -41,7 +41,7 @@ type MediaFilters = {
   menu?: "LiveTv" | "Podcast";
   mediaType?: "video" | "audio";
   category?: string;
-  status?: "processing" | "ready" | "failed";
+  status?: "processing" | "ready" | "failed" | "published";
 };
 
 export async function getMedia(filters: MediaFilters = {}) {
@@ -64,7 +64,7 @@ export async function createMedia(payload: {
   duration?: number;
   fileUrl: string;
   thumbnailUrl?: string;
-  status?: "processing" | "ready" | "failed";
+  status?: "processing" | "ready" | "failed" | "published";
 }) {
   return apiFetch<MediaItem>("/media", {
     method: "POST",

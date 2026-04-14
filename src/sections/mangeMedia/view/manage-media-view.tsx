@@ -188,7 +188,7 @@ export default function ManageVideos() {
           <InputLabel>Menu</InputLabel>
           <Select value={menu} label="Menu" onChange={(e) => setMenu(e.target.value)}>
             <MenuItem value="">All</MenuItem>
-            <MenuItem value="LiveTv">LiveTv</MenuItem>
+            <MenuItem value="LiveTv">Videos</MenuItem>
             <MenuItem value="Podcast">Podcast</MenuItem>
           </Select>
         </FormControl>
@@ -254,7 +254,7 @@ export default function ManageVideos() {
 
                 {/* 🏷 Chips */}
                 <Box mt={1} display="flex" gap={1} flexWrap="wrap">
-                  <Chip label={video.menu} size="small" />
+                  <Chip label={video.menu === "LiveTv" ? "Videos" : video.menu} size="small" />
                   <Chip
                     label={video.mediaType === "video" ? "Video 🎬" : "Audio 🎵"}
                     size="small"

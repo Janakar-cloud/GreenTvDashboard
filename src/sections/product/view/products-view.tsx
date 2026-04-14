@@ -18,13 +18,13 @@ import {
   InputLabel,
   CardContent,
   FormControl,
-  OutlinedInput,
-  LinearProgress,
   ListItemText,
+  OutlinedInput,
   FormHelperText,
+  LinearProgress,
 } from "@mui/material";
 
-import { type CategoryOption, createMedia, getMediaCategories, uploadMediaFile } from "src/api/media";
+import { createMedia, uploadMediaFile, getMediaCategories, type CategoryOption } from "src/api/media";
 
 export function ProductsView() {
   const [mediaType, setMediaType] = useState<"video" | "audio">("video");
@@ -135,7 +135,7 @@ export function ProductsView() {
     setError(null);
   };
 
-  const handleUpload = async () => {
+  const handleUpload = async (publish: boolean) => {
     if (!file) {
       setError("Please select a media file to upload.");
       return;
@@ -174,10 +174,14 @@ export function ProductsView() {
         categories: selectedCategoryIds,
         fileUrl,
         thumbnailUrl,
-        status: "ready",
+        status: publish ? "published" : "ready",
       });
 
-      setSuccess("Upload completed");
+      setSuccess(
+        publish && mediaType === "video"
+          ? "Published! This video is now live and will auto-play on the public homepage."
+          : "Upload completed. Set status to Published to make it visible on the public site."
+      );
       resetForm();
     } catch (err) {
       const message = err instanceof Error ? err.message : "Upload failed";
@@ -460,8 +464,22 @@ export function ProductsView() {
 
           {/* 🚀 ACTIONS */}
           <Box mt={3} display="flex" gap={2}>
-            <Button variant="contained" fullWidth disabled={uploading} onClick={handleUpload}>
-              Upload
+            <Button
+              variant="contained"
+              color="success"
+              fullWidth
+              disabled={uploading}
+              onClick={() => handleUpload(true)}
+            >
+              Publish
+            </Button>
+            <Button
+              variant="outlined"
+              fullWidth
+              disabled={uploading}
+              onClick={() => handleUpload(false)}
+            >
+              Save as Draft
             </Button>
 
             <Button
