@@ -34,6 +34,7 @@ export default defineConfig({
   server: {
     port: PORT,
     host: true,
+    allowedHosts: ['dashboard.thegreentv.com'],
     proxy: {
       '/api': {
         // Override with BACKEND_URL env var when the API runs on a different host,
