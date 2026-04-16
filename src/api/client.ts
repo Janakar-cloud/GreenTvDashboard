@@ -226,6 +226,9 @@ export function uploadToSignedUrlWithProgress(
     xhr.addEventListener("abort", () => reject(new Error("Upload cancelled")));
 
     xhr.open("PUT", url);
+    if (file.type) {
+      xhr.setRequestHeader("Content-Type", file.type);
+    }
     xhr.send(file);
   });
 }

@@ -60,7 +60,7 @@ export async function createMedia(payload: {
   description?: string;
   mediaType: "video" | "audio";
   menu: "LiveTv" | "Podcast";
-  categories: string[];  // min 2 Category ObjectId strings
+  categories?: string[];  // Optional array of Category ObjectId strings
   duration?: number;
   fileUrl: string;
   thumbnailUrl?: string;
