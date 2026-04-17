@@ -152,13 +152,13 @@ export function ProductsView() {
     setProgress(5);
 
     try {
-      const mediaPrefix = mediaType === "video" ? "uploads/videos" : "uploads/podcasts";
+      const mediaPrefix = mediaType === "video" ? "videos" : "podcasts";
       const fileUrl = await uploadMediaFile(mediaPrefix, file, setProgress);
 
       let thumbnailUrl: string | undefined;
 
       if (mediaType === "video" && thumbnail) {
-        thumbnailUrl = await uploadMediaFile("uploads/thumbnails", thumbnail);
+        thumbnailUrl = await uploadMediaFile("thumbnails", thumbnail);
       }
 
       await createMedia({
