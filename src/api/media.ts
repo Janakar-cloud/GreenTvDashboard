@@ -111,10 +111,27 @@ export async function getMediaCategories(): Promise<CategoryOption[]> {
 }
 
 export async function requestUploadUrl(prefix: string, contentType: string) {
+  const normalizedContentType = normalizeUploadContentType(contentType);
   return apiFetch<{ url: string; fileUrl: string }>("/uploads/presign", {
     method: "POST",
-    body: JSON.stringify({ prefix, contentType }),
+    body: JSON.stringify({ prefix, contentType: normalizedContentType }),
   });
+}
+
+function normalizeUploadContentType(contentType: string): string {
+  const normalized = contentType.split(";")[0].trim().toLowerCase();
+
+  const aliases: Record<string, string> = {
+    "image/jfif": "image/jpeg",
+    "image/pjpeg": "image/jpeg",
+    "image/x-png": "image/png",
+    "audio/mp3": "audio/mpeg",
+    "audio/x-mp3": "audio/mpeg",
+    "audio/x-wav": "audio/wav",
+    "video/x-m4v": "video/mp4",
+  };
+
+  return aliases[normalized] || normalized || contentType;
 }
 
 export async function uploadFileWithProgress(
