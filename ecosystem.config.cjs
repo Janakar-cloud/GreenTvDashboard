@@ -9,26 +9,16 @@ module.exports = {
   apps: [
     {
       name: 'thegreentv-dashboard',
-      script: 'serve',          // uses `serve` npm package (global: sudo npm i -g serve)
-      args: [
-        'dist',                 // folder to serve (vite build output)
-        '--listen', 'tcp:3039', // serve v14+ requires tcp: prefix
-        '--single',             // SPA fallback — all routes → index.html
-        '--no-clipboard',
-      ],
-      env: {
-        NODE_ENV: 'production',
-        PM2_SERVE_PATH: 'dist',
-        PM2_SERVE_PORT: '3039',
-        PM2_SERVE_SPA: 'true',
-      },
-      interpreter: 'none',     // `serve` is a standalone binary
+      script: 'npm',
+      args: 'run serve:prod',
+      cwd: '/home/ubuntu/dashboard/GreenTvDashboard',
+      interpreter: 'none',              // npm is a binary, not a node script
 
       // ── process behaviour ──────────────────────────────────────────────
-      instances: 1,            // one process is enough for a static server
+      instances: 1,
       autorestart: true,
-      watch: false,            // never watch — redeploy manually
-      max_memory_restart: '200M',
+      watch: false,
+      max_memory_restart: '300M',
 
       // ── logs ──────────────────────────────────────────────────────────
       out_file: '/home/ubuntu/.pm2/logs/thegreentv-dashboard-out.log',
