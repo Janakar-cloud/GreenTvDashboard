@@ -146,6 +146,11 @@ export function ProductsView() {
       return;
     }
 
+    if (selectedCategoryIds.length < 2) {
+      setError("Please select at least 2 categories.");
+      return;
+    }
+
     setUploading(true);
     setError(null);
     setSuccess(null);
@@ -373,8 +378,8 @@ export function ProductsView() {
 
           {/* CATEGORY — multi-select, min 2 */}
           <Box mt={3}>
-            <FormControl fullWidth>
-              <InputLabel>Categories (optional)</InputLabel>
+            <FormControl fullWidth required error={selectedCategoryIds.length > 0 && selectedCategoryIds.length < 2}>
+              <InputLabel>Categories * (select at least 2)</InputLabel>
               <Select
                 multiple
                 value={selectedCategoryIds}
@@ -382,7 +387,7 @@ export function ProductsView() {
                   const val = e.target.value;
                   setSelectedCategoryIds(typeof val === 'string' ? [val] : val as string[]);
                 }}
-                input={<OutlinedInput label="Categories (optional)" />}
+                input={<OutlinedInput label="Categories * (select at least 2)" />}
                 renderValue={(selected) =>
                   (selected as string[])
                     .map((id) => categoryOptions.find((c) => c.id === id)?.name || id)
@@ -397,6 +402,13 @@ export function ProductsView() {
                   </MenuItem>
                 ))}
               </Select>
+              <FormHelperText>
+                {selectedCategoryIds.length === 0
+                  ? "Required — select at least 2 categories"
+                  : selectedCategoryIds.length === 1
+                  ? "Select 1 more category"
+                  : `${selectedCategoryIds.length} selected`}
+              </FormHelperText>
               {selectedCategoryIds.length > 0 && (
                 <Box mt={1} display="flex" gap={0.5} flexWrap="wrap">
                   {selectedCategoryIds.map((id) => (
