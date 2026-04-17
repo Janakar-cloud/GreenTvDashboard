@@ -9,13 +9,12 @@ module.exports = {
   apps: [
     {
       name: 'thegreentv-dashboard',
-      script: 'serve',          // uses `serve` npm package
+      script: 'serve',          // uses `serve` npm package (global: sudo npm i -g serve)
       args: [
         'dist',                 // folder to serve (vite build output)
-        '--listen', '3039',     // internal port Nginx proxies to
+        '--listen', 'tcp:3039', // serve v14+ requires tcp: prefix
         '--single',             // SPA fallback — all routes → index.html
         '--no-clipboard',
-        '--no-port-switching',  // fail hard if port is taken (avoids silent drift)
       ],
       env: {
         NODE_ENV: 'production',
