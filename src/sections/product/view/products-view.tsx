@@ -174,7 +174,7 @@ export function ProductsView() {
         categories: selectedCategoryIds,
         fileUrl,
         thumbnailUrl,
-        status: publish ? "published" : "ready",
+        status: publish ? "ready" : "processing",
       });
 
       setSuccess(
